@@ -1,7 +1,8 @@
 from unittest import TestCase, skip
 
 from autoretouch_api_client.client import get_api_status, get_device_code, get_access_and_refresh_token, \
-    get_api_status_current, get_organizations, get_workflows
+    get_api_status_current, get_organizations, get_workflows, upload_image, \
+    create_workflow_execution_for_image_reference
 
 
 class HealthApiTestCase(TestCase):
@@ -39,4 +40,11 @@ class AuthorizedApiTestCase(TestCase):
         workflow = workflows[0]
         self.assertIsNotNone(workflow)
 
+        image_content_hash = upload_image(self.access_token,
+                                          "my_image.jpg", "image/jpeg", organization.id, "../assets/input_image.jpeg")
+        self.assertIsNotNone(image_content_hash)
 
+        workflow_execution_id = create_workflow_execution_for_image_reference(
+            self.access_token, workflow.id, workflow.version, organization.id,
+            image_content_hash, "my_image.jpg", "image/jpeg", {})
+        self.assertIsNotNone(workflow_execution_id)

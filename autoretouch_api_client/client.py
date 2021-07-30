@@ -1,3 +1,6 @@
+import json
+from uuid import UUID
+
 import requests
 
 from typing import Tuple, Dict, List
@@ -32,9 +35,10 @@ def get_api_status_current() -> int:
 
 
 def get_device_code() -> Tuple[str, str, str]:
+    url = f"{apiConfig.AUTH_DOMAIN}/oauth/device/code"
     payload = f"client_id={apiConfig.CLIENT_ID}&scope={apiConfig.SCOPE}&audience={apiConfig.AUDIENCE}"
     headers = {'content-type': "application/x-www-form-urlencoded"}
-    response = requests.post(f"{apiConfig.AUTH_DOMAIN}/oauth/device/code", headers=headers, data=payload)
+    response = requests.post(url=url, headers=headers, data=payload)
     assert response.status_code == 200
     device_code = response.json().get("device_code")
     user_code = response.json().get("user_code")
@@ -43,11 +47,12 @@ def get_device_code() -> Tuple[str, str, str]:
 
 
 def get_access_and_refresh_token(device_code: str) -> Tuple[str, str, int]:
+    url = f"{apiConfig.AUTH_DOMAIN}/oauth/token"
     payload = f"grant_type=urn:ietf:params:oauth:grant-type:device_code" \
               f"&device_code={device_code}" \
               f"&client_id={apiConfig.CLIENT_ID}"
     headers = {'content-type': "application/x-www-form-urlencoded"}
-    response = requests.post(f"{apiConfig.AUTH_DOMAIN}/oauth/token", headers=headers, data=payload)
+    response = requests.post(url=url, headers=headers, data=payload)
     assert response.status_code == 200
     return response.json().get("access_token"), response.json().get("refresh_token"), response.json().get("expires_in")
 
@@ -61,8 +66,9 @@ def revoke_access_token(refresh_token: str) -> str:
 
 
 def get_organizations(access_token: str) -> List[Organization]:
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/organization?limit=50&offset=0"
     headers = {"Authorization": f"Bearer {access_token}", "content-type": "json"}
-    response = requests.get(f"{apiConfig.BASE_API_URL_CURRENT}/organization?limit=50&offset=0", headers=headers)
+    response = requests.get(url=url, headers=headers)
     assert response.status_code == 200
     page = Page(**response.json())
     organizations = [Organization(**entry) for entry in page.entries]
@@ -70,9 +76,42 @@ def get_organizations(access_token: str) -> List[Organization]:
 
 
 def get_workflows(access_token: str) -> List[Workflow]:
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow?limit=50&offset=0"
     headers = {"Authorization": f"Bearer {access_token}", "content-type": "json"}
-    response = requests.get(f"{apiConfig.BASE_API_URL_CURRENT}/workflow?limit=50&offset=0", headers=headers)
+    response = requests.get(url=url, headers=headers)
     assert response.status_code == 200
     page = Page(**response.json())
     workflows = [Workflow(**entry) for entry in page.entries]
     return workflows
+
+
+def upload_image(access_token: str, filename: str, mimetype: str, organization_id: UUID, filepath: str) -> str:
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    files = [('file', (filename, open(filepath, 'rb'), mimetype))]
+
+    response = requests.post(url=url, headers=headers, files=files)
+    assert response.status_code == 201
+    return response.content.decode(response.encoding)
+
+
+def create_workflow_execution_for_image_reference(
+        access_token: str, workflow_id: UUID, workflow_version_id: UUID, organization_id: UUID,
+        image_content_hash: str, image_name: str, mimetype: str, labels: Dict[str, str]) -> str:
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow/execution/create" \
+          f"?workflow={workflow_id}" \
+          f"&version={workflow_version_id}" \
+          f"&organization={organization_id}"
+    headers = {"Authorization": f"Bearer {access_token}", "content-type": "application/json"}
+    payload = {
+        "image": {
+            "name": image_name,
+            "contentHash": image_content_hash,
+            "contentType": mimetype
+        },
+        #"labels": labels
+    }
+
+    response = requests.post(url=url, headers=headers, data=json.dumps(payload))
+    assert response.status_code == 201
+    return response.content.decode(response.encoding)
