@@ -1,0 +1,8 @@
+venv
+*.pyc
+*.DS_Store
+.idea/
+.vscode/
+venv/
+
+access_token.txt
