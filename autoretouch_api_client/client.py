@@ -5,7 +5,8 @@ import requests
 
 from typing import Tuple, Dict, List
 
-from autoretouch_api_client.model import ApiConfig, Organization, Page, Workflow
+from autoretouch_api_client.model import (
+    ApiConfig, Organization, Page, Workflow, DeviceCodeResponse, AccessTokenResponse)
 
 configDev = ApiConfig(
     BASE_API_URL="https://api.dev.autoretouch.com",
@@ -34,19 +35,16 @@ def get_api_status_current() -> int:
     return requests.get(f"{apiConfig.BASE_API_URL_CURRENT}/health").status_code
 
 
-def get_device_code() -> Tuple[str, str, str]:
+def get_device_code() -> DeviceCodeResponse:
     url = f"{apiConfig.AUTH_DOMAIN}/oauth/device/code"
     payload = f"client_id={apiConfig.CLIENT_ID}&scope={apiConfig.SCOPE}&audience={apiConfig.AUDIENCE}"
     headers = {'content-type': "application/x-www-form-urlencoded"}
     response = requests.post(url=url, headers=headers, data=payload)
     assert response.status_code == 200
-    device_code = response.json().get("device_code")
-    user_code = response.json().get("user_code")
-    verification_url = response.json().get("verification_uri_complete")
-    return device_code, user_code, verification_url
+    return DeviceCodeResponse(**response.json())
 
 
-def get_access_and_refresh_token(device_code: str) -> Tuple[str, str, int]:
+def get_access_and_refresh_token(device_code: str) -> AccessTokenResponse:
     url = f"{apiConfig.AUTH_DOMAIN}/oauth/token"
     payload = f"grant_type=urn:ietf:params:oauth:grant-type:device_code" \
               f"&device_code={device_code}" \
@@ -54,15 +52,22 @@ def get_access_and_refresh_token(device_code: str) -> Tuple[str, str, int]:
     headers = {'content-type': "application/x-www-form-urlencoded"}
     response = requests.post(url=url, headers=headers, data=payload)
     assert response.status_code == 200
-    return response.json().get("access_token"), response.json().get("refresh_token"), response.json().get("expires_in")
+    return AccessTokenResponse(**response.json())
 
 
-def refresh_access_token(refresh_token: str) -> str:
-    pass
+def refresh_access_token(refresh_token: str) -> AccessTokenResponse:
+    url = f"{apiConfig.AUTH_DOMAIN}/oauth/token"
+    payload = f"grant_type=refresh_token" \
+              f"&refresh_token={refresh_token}" \
+              f"&client_id={apiConfig.CLIENT_ID}"
+    headers = {'content-type': "application/x-www-form-urlencoded"}
+    response = requests.post(url=url, headers=headers, data=payload)
+    assert response.status_code == 200
+    return AccessTokenResponse(**response.json(), refresh_token=refresh_token)
 
 
 def revoke_access_token(refresh_token: str) -> str:
-    pass
+    pass  # TODO
 
 
 def get_organizations(access_token: str) -> List[Organization]:

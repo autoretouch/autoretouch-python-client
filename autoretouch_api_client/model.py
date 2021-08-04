@@ -13,6 +13,24 @@ class ApiConfig:
         self.AUTH_DOMAIN = AUTH_DOMAIN
 
 
+class DeviceCodeResponse:
+    def __init__(self, device_code: str, user_code: str, verification_uri_complete: str, expires_in: int, interval: int, **kwargs):
+        self.device_code = device_code
+        self.user_code = user_code
+        self.verification_uri_complete = verification_uri_complete
+        self.expires_in = expires_in
+        self.interval = interval
+
+
+class AccessTokenResponse:
+    def __init__(self, access_token: str, refresh_token: str, scope: str, expires_in: int, token_type: str):
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+        self.scope = scope
+        self.expires_in = expires_in
+        self.token_type = token_type
+
+
 class Page:
     def __init__(self, entries: List, total: int):
         self.entries = entries
