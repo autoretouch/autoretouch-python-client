@@ -1,4 +1,6 @@
 import json
+import os
+import mimetypes
 from uuid import UUID
 
 import requests
@@ -80,8 +82,8 @@ def get_organizations(access_token: str) -> List[Organization]:
     return organizations
 
 
-def get_workflows(access_token: str) -> List[Workflow]:
-    url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow?limit=50&offset=0"
+def get_workflows(access_token: str, organization_id: UUID) -> List[Workflow]:
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow?limit=50&offset=0&organization={organization_id}"
     headers = {"Authorization": f"Bearer {access_token}", "content-type": "json"}
     response = requests.get(url=url, headers=headers)
     assert response.status_code == 200
@@ -90,19 +92,21 @@ def get_workflows(access_token: str) -> List[Workflow]:
     return workflows
 
 
-def upload_image(access_token: str, filename: str, mimetype: str, organization_id: UUID, filepath: str) -> str:
+def upload_image(access_token: str, organization_id: UUID, filepath: str) -> str:
     url = f"{apiConfig.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
-    files = [('file', (filename, open(filepath, 'rb'), mimetype))]
-
-    response = requests.post(url=url, headers=headers, files=files)
+    with open(filepath, 'rb') as file:
+        filename = os.path.basename(file.name)
+        mimetype, _ = mimetypes.guess_type(file.name)
+        files = [('file', (filename, file, mimetype))]
+        response = requests.post(url=url, headers=headers, files=files)
     assert response.status_code == 201
     return response.content.decode(response.encoding)
 
 
 def create_workflow_execution_for_image_reference(
         access_token: str, workflow_id: UUID, workflow_version_id: UUID, organization_id: UUID,
-        image_content_hash: str, image_name: str, mimetype: str, labels: Dict[str, str]) -> str:
+        image_content_hash: str, image_name: str, mimetype: str, labels: Dict[str, str]) -> UUID:
     url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow/execution/create" \
           f"?workflow={workflow_id}" \
           f"&version={workflow_version_id}" \
@@ -114,9 +118,28 @@ def create_workflow_execution_for_image_reference(
             "contentHash": image_content_hash,
             "contentType": mimetype
         },
-        #"labels": labels
+        "labels": labels
     }
 
     response = requests.post(url=url, headers=headers, data=json.dumps(payload))
     assert response.status_code == 201
-    return response.content.decode(response.encoding)
+    return UUID(response.content.decode(response.encoding))
+
+
+def create_workflow_execution_for_image_file(
+        access_token: str, workflow_id: UUID, workflow_version_id: UUID, organization_id: UUID,
+        filepath: str, labels: Dict[str, str]) -> UUID:
+    labels_encoded = "".join([f"&label[{key}]={value}" for key, value in labels.items()])
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow/execution/create" \
+          f"?workflow={workflow_id}" \
+          f"&version={workflow_version_id}" \
+          f"&organization={organization_id}" \
+          f"{labels_encoded}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    with open(filepath, 'rb') as file:
+        filename = os.path.basename(file.name)
+        mimetype, _ = mimetypes.guess_type(file.name)
+        files = [('file', (filename, file, mimetype))]
+        response = requests.post(url=url, headers=headers, files=files)
+    assert response.status_code == 201
+    return UUID(response.content.decode(response.encoding))
