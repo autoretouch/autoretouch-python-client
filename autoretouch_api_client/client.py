@@ -196,3 +196,19 @@ def download_workflow_execution_result(access_token: str, organization_id: UUID,
     response = requests.get(url=url, headers=headers)
     __assert_response_ok(response)
     return response.content
+
+
+def send_feedback(access_token: str, organization_id: UUID, workflow_execution_id: UUID, thumbs_up: bool, expected_images_content_hashes: List[str] = []):
+    url = f"{API_CONFIG.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/feedback?organization={organization_id}"
+    headers = {"User-Agent": USER_AGENT, "Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
+    payload = {
+        "thumbsUp": thumbs_up,
+        "expectedImages": expected_images_content_hashes
+    }
+    response = requests.post(url=url, headers=headers, data=json.dumps(payload))
+    __assert_response_ok(response)
+
+
+def __assert_response_ok(response):
+    if response.status_code != 200 and response.status_code != 201:
+        raise RuntimeError(f"API responded with Status Code {response.status_code}, reason: {response.reason}")
