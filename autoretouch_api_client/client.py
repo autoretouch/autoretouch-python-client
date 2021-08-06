@@ -93,6 +93,10 @@ def get_workflows(access_token: str, organization_id: UUID) -> List[Workflow]:
     return workflows
 
 
+def get_workflow_executions(access_token: str, organization_id: UUID, workflow_id: UUID) -> Page:
+    pass  # TODO
+
+
 def upload_image(access_token: str, organization_id: UUID, filepath: str) -> str:
     url = f"{apiConfig.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -103,6 +107,14 @@ def upload_image(access_token: str, organization_id: UUID, filepath: str) -> str
         response = requests.post(url=url, headers=headers, files=files)
     assert response.status_code == 201
     return response.content.decode(response.encoding)
+
+
+def download_image(access_token: str, organization_id: UUID, content_hash: str, output_filename: str) -> bytes:
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/image/{content_hash}/{output_filename}?organization={organization_id}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(url=url, headers=headers)
+    assert response.status_code == 200
+    return response.content
 
 
 def create_workflow_execution_for_image_reference(
@@ -163,9 +175,18 @@ def get_workflow_execution_status_blocking(access_token: str, organization_id: U
     return response.content.decode(response.encoding)
 
 
-def get_workflow_execution_result_blocking(access_token: str, organization_id: UUID, workflow_execution_id: UUID) -> bytes:
+def download_workflow_execution_result_blocking(access_token: str, organization_id: UUID, workflow_execution_id: UUID) -> bytes:
     url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/result/default?organization={organization_id}"
-    headers = {"Authorization": f"Bearer {access_token}", "content-type": "json"}
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(url=url, headers=headers)
+    assert response.status_code == 200
+    return response.content
+
+
+def download_workflow_execution_result(access_token: str, organization_id: UUID, result_path: str) -> bytes:
+    assert result_path.startswith("/image/")
+    url = f"{apiConfig.BASE_API_URL_CURRENT}{result_path}?organization={organization_id}"
+    headers = {"Authorization": f"Bearer {access_token}"}
     response = requests.get(url=url, headers=headers)
     assert response.status_code == 200
     return response.content

@@ -3,10 +3,11 @@ from unittest import TestCase, skip
 from uuid import UUID
 from assertpy import assert_that
 
-from autoretouch_api_client.client import get_api_status, get_device_code, get_access_and_refresh_token, \
-    get_api_status_current, get_organizations, get_workflows, upload_image, \
-    create_workflow_execution_for_image_reference, create_workflow_execution_for_image_file, \
-    get_workflow_execution_details, get_workflow_execution_result_blocking, get_workflow_execution_status_blocking
+from autoretouch_api_client.client import (
+    get_api_status, get_api_status_current, get_organizations, get_workflows,
+    upload_image, create_workflow_execution_for_image_reference, create_workflow_execution_for_image_file,
+    get_workflow_execution_details, download_workflow_execution_result_blocking, download_workflow_execution_result,
+    download_image)
 from test.auth import create_or_get_credentials
 
 
@@ -55,7 +56,7 @@ class AuthorizedApiIntegrationTest(TestCase):
         assert_that(execution_details.inputFileName).is_equal_to("input_image.jpeg")
         assert_that(execution_details.labels).is_equal_to({"myLabel": "myValue"})
 
-        result_bytes = get_workflow_execution_result_blocking(self.access_token, organization.id, workflow_execution_id)
+        result_bytes = download_workflow_execution_result_blocking(self.access_token, organization.id, workflow_execution_id)
         assert_that(len(result_bytes)).is_greater_than(0)
 
         execution_details_completed = get_workflow_execution_details(self.access_token, organization.id, workflow_execution_id)
@@ -71,6 +72,14 @@ class AuthorizedApiIntegrationTest(TestCase):
         assert_that(execution_details_completed.resultContentType).is_not_empty()
         assert_that(execution_details_completed.resultFileName).is_not_empty()
         result_path = execution_details_completed.resultPath
-        assert_that(result_path).is_not_empty()
+        assert_that(result_path).starts_with("/image/")
 
+        result_bytes_2 = download_workflow_execution_result(self.access_token, organization.id, result_path)
+        assert_that(len(result_bytes_2)).is_greater_than(0)
+        assert_that(result_bytes_2).is_equal_to(result_bytes)
+
+        result_bytes_3 = download_image(self.access_token, organization.id,
+                                        execution_details_completed.resultContentHash, execution_details_completed.resultFileName)
+        assert_that(len(result_bytes_3)).is_greater_than(0)
+        assert_that(result_bytes_3).is_equal_to(result_bytes)
 
