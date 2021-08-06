@@ -94,7 +94,13 @@ def get_workflows(access_token: str, organization_id: UUID) -> List[Workflow]:
 
 
 def get_workflow_executions(access_token: str, organization_id: UUID, workflow_id: UUID) -> Page:
-    pass  # TODO
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow/execution?workflow={workflow_id}&limit=50&offset=0&organization={organization_id}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    response = requests.get(url=url, headers=headers)
+    assert response.status_code == 200
+    page = Page(**response.json())
+    page.entries = [WorkflowExecution(**entry) for entry in page.entries]
+    return page
 
 
 def upload_image(access_token: str, organization_id: UUID, filepath: str) -> str:

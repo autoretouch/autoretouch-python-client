@@ -7,7 +7,7 @@ from autoretouch_api_client.client import (
     get_api_status, get_api_status_current, get_organizations, get_workflows,
     upload_image, create_workflow_execution_for_image_reference, create_workflow_execution_for_image_file,
     get_workflow_execution_details, download_workflow_execution_result_blocking, download_workflow_execution_result,
-    download_image)
+    download_image, get_workflow_executions)
 from test.auth import create_or_get_credentials
 
 
@@ -55,6 +55,11 @@ class AuthorizedApiIntegrationTest(TestCase):
         assert_that(execution_details.inputContentHash).is_equal_to(image_content_hash)
         assert_that(execution_details.inputFileName).is_equal_to("input_image.jpeg")
         assert_that(execution_details.labels).is_equal_to({"myLabel": "myValue"})
+
+        workflow_executions = get_workflow_executions(self.access_token, organization.id, workflow.id)
+        assert_that(len(workflow_executions.entries)).is_greater_than(0)
+        assert_that(workflow_executions.total).is_greater_than(0)
+        assert_that([entry.id for entry in workflow_executions.entries]).contains(workflow_execution_id)
 
         result_bytes = download_workflow_execution_result_blocking(self.access_token, organization.id, workflow_execution_id)
         assert_that(len(result_bytes)).is_greater_than(0)
