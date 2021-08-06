@@ -1,6 +1,7 @@
 import json
 import os
 import mimetypes
+from io import BytesIO
 from uuid import UUID
 
 import requests
@@ -151,3 +152,11 @@ def get_workflow_execution_details(access_token: str, organization_id: UUID, wor
     response = requests.get(url=url, headers=headers)
     assert response.status_code == 200
     return WorkflowExecution(**response.json())
+
+
+def get_workflow_execution_result_blocking(access_token: str, organization_id: UUID, workflow_execution_id: UUID) -> bytes:
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/result/default?organization={organization_id}"
+    headers = {"Authorization": f"Bearer {access_token}", "content-type": "json"}
+    response = requests.get(url=url, headers=headers)
+    assert response.status_code == 200
+    return response.content
