@@ -52,7 +52,11 @@ class AuthorizedApiIntegrationTest(TestCase):
 
         execution_details = get_workflow_execution_details(self.access_token, organization.id, workflow_execution_id)
         assert_that(execution_details.workflow).is_equal_to(workflow.id)
-        assert_that(execution_details.organizationId).is_equal_to(organization.id)
         assert_that(execution_details.workflowVersion).is_equal_to(workflow.version)
+        assert_that(execution_details.organizationId).is_equal_to(organization.id)
+        assert_that(execution_details.inputContentHash).is_equal_to(image_content_hash)
+        assert_that(execution_details.inputFileName).is_equal_to("my_image.jpg")
+        assert_that(execution_details.labels).is_equal_to({"myLabel": "myValue"})
+
 
 
