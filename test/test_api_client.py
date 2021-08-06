@@ -82,6 +82,7 @@ class AuthorizedApiIntegrationTest(TestCase):
         assert_that(execution_details.inputContentHash).is_equal_to(input_image_content_hash)
         assert_that(execution_details.inputFileName).is_equal_to(input_image_name)
         assert_that(execution_details.labels).is_equal_to(labels)
+        assert_that(["CREATED", "ACTIVE"]).contains(execution_details.status)
 
     def assert_workflow_executions_contain_execution(self, organization: Organization, workflow: Workflow, workflow_execution_id: UUID):
         workflow_executions = get_workflow_executions(self.access_token, organization.id, workflow.id)
