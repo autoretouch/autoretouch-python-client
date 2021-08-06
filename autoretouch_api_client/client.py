@@ -154,6 +154,15 @@ def get_workflow_execution_details(access_token: str, organization_id: UUID, wor
     return WorkflowExecution(**response.json())
 
 
+def get_workflow_execution_status_blocking(access_token: str, organization_id: UUID, workflow_execution_id: UUID) -> str:
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/status?organization={organization_id}"
+    headers = {"Authorization": f"Bearer {access_token}", "content-type": "text/event-stream"}
+    response = requests.get(url=url, headers=headers)
+    assert response.status_code == 200
+    # TODO: decode event stream format
+    return response.content.decode(response.encoding)
+
+
 def get_workflow_execution_result_blocking(access_token: str, organization_id: UUID, workflow_execution_id: UUID) -> bytes:
     url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/result/default?organization={organization_id}"
     headers = {"Authorization": f"Bearer {access_token}", "content-type": "json"}
