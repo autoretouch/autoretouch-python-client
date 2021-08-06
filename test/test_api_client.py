@@ -1,10 +1,12 @@
 
 from unittest import TestCase, skip
 from uuid import UUID
+from assertpy import assert_that
 
 from autoretouch_api_client.client import get_api_status, get_device_code, get_access_and_refresh_token, \
     get_api_status_current, get_organizations, get_workflows, upload_image, \
-    create_workflow_execution_for_image_reference, create_workflow_execution_for_image_file
+    create_workflow_execution_for_image_reference, create_workflow_execution_for_image_file, \
+    get_workflow_execution_details
 from test.auth import create_or_get_credentials
 
 
@@ -14,6 +16,9 @@ class HealthApiIntegrationTest(TestCase):
 
     def test_health_versioned(self):
         self.assertEqual(get_api_status_current(), 200)
+
+
+
 
 
 class AuthorizedApiIntegrationTest(TestCase):
@@ -44,3 +49,10 @@ class AuthorizedApiIntegrationTest(TestCase):
             self.access_token, workflow.id, workflow.version, organization.id,
             image_content_hash, "my_image.jpg", "image/jpeg", {"myLabel": "myValue"})
         self.assertIsNotNone(workflow_execution_id)
+
+        execution_details = get_workflow_execution_details(self.access_token, organization.id, workflow_execution_id)
+        assert_that(execution_details.workflow).is_equal_to(workflow.id)
+        assert_that(execution_details.organizationId).is_equal_to(organization.id)
+        assert_that(execution_details.workflowVersion).is_equal_to(workflow.version)
+
+

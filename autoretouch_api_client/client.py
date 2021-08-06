@@ -8,7 +8,7 @@ import requests
 from typing import Tuple, Dict, List
 
 from autoretouch_api_client.model import (
-    ApiConfig, Organization, Page, Workflow, DeviceCodeResponse, AccessTokenResponse)
+    ApiConfig, Organization, Page, Workflow, DeviceCodeResponse, AccessTokenResponse, WorkflowExecution)
 
 configDev = ApiConfig(
     BASE_API_URL="https://api.dev.autoretouch.com",
@@ -143,3 +143,11 @@ def create_workflow_execution_for_image_file(
         response = requests.post(url=url, headers=headers, files=files)
     assert response.status_code == 201
     return UUID(response.content.decode(response.encoding))
+
+
+def get_workflow_execution_details(access_token: str, organization_id: UUID, workflow_execution_id: UUID) -> WorkflowExecution:
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}?organization={organization_id}"
+    headers = {"Authorization": f"Bearer {access_token}", "content-type": "json"}
+    response = requests.get(url=url, headers=headers)
+    assert response.status_code == 200
+    return WorkflowExecution(**response.json())
