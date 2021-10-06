@@ -160,3 +160,9 @@ def get_workflow_execution_result_blocking(access_token: str, organization_id: U
     response = requests.get(url=url, headers=headers)
     assert response.status_code == 200
     return response.content
+
+
+def retry_workflow_execution(access_token: str, organization_id: UUID, workflow_execution_id: UUID) -> int:
+    url = f"{apiConfig.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/retry?organization={organization_id}"
+    headers = {"Authorization": f"Bearer {access_token}", "content-type": "json"}
+    return requests.post(url=url, headers=headers, data={}).status_code
