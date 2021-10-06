@@ -39,8 +39,8 @@ class Page:
 
 class Organization:
     def __init__(self, **kwargs):
-        self.id: UUID = kwargs.get("id")
-        self.version: UUID = kwargs.get("version")
+        self.id: UUID = UUID(kwargs.get("id"))
+        self.version: UUID = UUID(kwargs.get("version"))
         self.name: str = kwargs.get("name")
         self.members: List = kwargs.get("members")
 
@@ -50,8 +50,8 @@ class Organization:
 
 class Workflow:
     def __init__(self, **kwargs):
-        self.id: UUID = kwargs.get("id")
-        self.version: UUID = kwargs.get("version")
+        self.id: UUID = UUID(kwargs.get("id"))
+        self.version: UUID = UUID(kwargs.get("version"))
         self.name: str = kwargs.get("name")
         self.date: str = kwargs.get("date")
         self.author: Dict = kwargs.get("author")
@@ -64,11 +64,11 @@ class Workflow:
 
 class WorkflowExecution:
     def __init__(self, **kwargs):
-        self.id: UUID = kwargs.get("id")
-        self.workflow: UUID = kwargs.get("workflow")
-        self.workflowVersion: UUID = kwargs.get("workflowVersion")
+        self.id: UUID = UUID(kwargs.get("id"))
+        self.workflow: UUID = UUID(kwargs.get("workflow"))
+        self.workflowVersion: UUID = UUID(kwargs.get("workflowVersion"))
         self.workflowName: str = kwargs.get("workflowName")
-        self.organizationId: UUID = kwargs.get("organizationId")
+        self.organizationId: UUID = UUID(kwargs.get("organizationId"))
         self.status: str = kwargs.get("status")
         self.userId: str = kwargs.get("userId")
         self.createdAt: str = kwargs.get("createdAt")
