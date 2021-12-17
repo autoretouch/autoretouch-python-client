@@ -20,7 +20,8 @@ CONFIG_DEV = ApiConfig(
 
 
 class HealthApiIntegrationTest(TestCase):
-    client = AutoretouchClient(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
+    def setUp(self) -> None:
+        self.client = AutoretouchClient(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
 
     def test_health(self):
         self.assertEqual(self.client.get_api_status(), 200)
@@ -29,10 +30,24 @@ class HealthApiIntegrationTest(TestCase):
         self.assertEqual(self.client.get_api_status_current(), 200)
 
 
-class AuthorizedApiIntegrationTest(TestCase):
+class RevokeAuthenticationIntegrationTest(TestCase):
+    def test_revoke_authentication(self):
+        client = AutoretouchClient(credentials_path="../tmp/other-credentials.json", api_config=CONFIG_DEV)
+        assert_that(client.credentials.refresh_token).is_not_empty()
+        assert_that(client.credentials.access_token).is_not_empty()
+
+        assert_that(client.get_organizations()).is_not_empty()
+
+        client.revoke_refresh_token()
+
+        assert_that(client.get_organizations).raises(RuntimeError)
+
+
+class AuthenticatedApiIntegrationTest(TestCase):
     # Warning! This integration test runs real workflow executions in your autoretouch account which will cost money.
 
-    client = AutoretouchClient(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
+    def setUp(self) -> None:
+        self.client = AutoretouchClient(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
 
     def test_upload_image_then_start_workflow_execution(self):
         organization, workflow = self.__get_organization_and_workflow()
@@ -55,7 +70,6 @@ class AuthorizedApiIntegrationTest(TestCase):
             organization, workflow, workflow_execution_id, input_image_content_hash, "input_image.jpeg", {"myLabel": "myValue"})
 
         self.__download_result_and_assert_equal(organization, workflow_execution_completed)
-
 
     def test_start_workflow_execution_immediately_and_wait(self):
         organization, workflow = self.__get_organization_and_workflow()

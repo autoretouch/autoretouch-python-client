@@ -41,37 +41,6 @@ class AutoretouchClient:
     def get_api_status_current(self, ) -> int:
         return requests.get(f"{self.API_CONFIG.BASE_API_URL_CURRENT}/health").status_code
 
-    def get_device_code(self, ) -> DeviceCodeResponse:
-        url = f"{self.API_CONFIG.AUTH_DOMAIN}/oauth/device/code"
-        payload = f"client_id={self.API_CONFIG.CLIENT_ID}&scope={self.API_CONFIG.SCOPE}&audience={self.API_CONFIG.AUDIENCE}"
-        headers = {"User-Agent": self.USER_AGENT, "Content-Type": "application/x-www-form-urlencoded"}
-        response = requests.post(url=url, headers=headers, data=payload)
-        self.__assert_response_ok(response)
-        return DeviceCodeResponse(**response.json())
-
-    def get_access_and_refresh_token(self, device_code: str) -> AccessTokenResponse:
-        url = f"{self.API_CONFIG.AUTH_DOMAIN}/oauth/token"
-        payload = f"grant_type=urn:ietf:params:oauth:grant-type:device_code" \
-                  f"&device_code={device_code}" \
-                  f"&client_id={self.API_CONFIG.CLIENT_ID}"
-        headers = {"User-Agent": self.USER_AGENT, "Content-Type": "application/x-www-form-urlencoded"}
-        response = requests.post(url=url, headers=headers, data=payload)
-        self.__assert_response_ok(response)
-        return AccessTokenResponse(**response.json())
-
-    def refresh_access_token(self, refresh_token: str) -> AccessTokenResponse:
-        url = f"{self.API_CONFIG.AUTH_DOMAIN}/oauth/token"
-        payload = f"grant_type=refresh_token" \
-                  f"&refresh_token={refresh_token}" \
-                  f"&client_id={self.API_CONFIG.CLIENT_ID}"
-        headers = {"User-Agent": self.USER_AGENT, "Content-Type": "application/x-www-form-urlencoded"}
-        response = requests.post(url=url, headers=headers, data=payload)
-        self.__assert_response_ok(response)
-        return AccessTokenResponse(**response.json(), refresh_token=refresh_token)
-
-    def revoke_access_token(self, refresh_token: str) -> str:
-        pass  # TODO
-
     def get_organizations(self) -> List[Organization]:
         self._refresh_credentials_if_expired()
         url = f"{self.API_CONFIG.BASE_API_URL_CURRENT}/organization?limit=50&offset=0"
@@ -213,7 +182,48 @@ class AutoretouchClient:
         if response.status_code != 200 and response.status_code != 201:
             raise RuntimeError(f"API responded with Status Code {response.status_code}, reason: {response.reason}")
 
-    # Auth
+    # Auth API
+
+    def get_device_code(self) -> DeviceCodeResponse:
+        url = f"{self.API_CONFIG.AUTH_DOMAIN}/oauth/device/code"
+        payload = f"client_id={self.API_CONFIG.CLIENT_ID}&scope={self.API_CONFIG.SCOPE}&audience={self.API_CONFIG.AUDIENCE}"
+        headers = {"User-Agent": self.USER_AGENT, "Content-Type": "application/x-www-form-urlencoded"}
+        response = requests.post(url=url, headers=headers, data=payload)
+        self.__assert_response_ok(response)
+        return DeviceCodeResponse(**response.json())
+
+    def get_access_and_refresh_token(self, device_code: str) -> AccessTokenResponse:
+        url = f"{self.API_CONFIG.AUTH_DOMAIN}/oauth/token"
+        payload = f"grant_type=urn:ietf:params:oauth:grant-type:device_code" \
+                  f"&device_code={device_code}" \
+                  f"&client_id={self.API_CONFIG.CLIENT_ID}"
+        headers = {"User-Agent": self.USER_AGENT, "Content-Type": "application/x-www-form-urlencoded"}
+        response = requests.post(url=url, headers=headers, data=payload)
+        self.__assert_response_ok(response)
+        return AccessTokenResponse(**response.json())
+
+    def get_refreshed_access_token(self) -> AccessTokenResponse:
+        url = f"{self.API_CONFIG.AUTH_DOMAIN}/oauth/token"
+        payload = f"grant_type=refresh_token" \
+                  f"&refresh_token={self.credentials.refresh_token}" \
+                  f"&client_id={self.API_CONFIG.CLIENT_ID}"
+        headers = {"User-Agent": self.USER_AGENT, "Content-Type": "application/x-www-form-urlencoded"}
+        response = requests.post(url=url, headers=headers, data=payload)
+        self.__assert_response_ok(response)
+        return AccessTokenResponse(**response.json(), refresh_token=self.credentials.refresh_token)
+
+    def revoke_refresh_token(self) -> int:
+        url = f"{self.API_CONFIG.AUTH_DOMAIN}/oauth/revoke"
+        payload = {
+            "client_id": self.API_CONFIG.CLIENT_ID,
+            "token": self.credentials.refresh_token
+        }
+        headers = {"User-Agent": self.USER_AGENT, "Content-Type": "application/json"}
+        response = requests.post(url=url, headers=headers, data=json.dumps(payload))
+        self.__assert_response_ok(response)
+        return response.status_code
+
+    # Auth Logic
 
     def _create_or_get_credentials(self) -> Credentials:
         try:
@@ -255,7 +265,7 @@ class AutoretouchClient:
     def _refresh_credentials_if_expired(self):
         if self.__token_expired(self.credentials.expires):
             print("access token expired, refreshing ...")
-            refresh_response = self.refresh_access_token(self.credentials.refresh_token)
+            refresh_response = self.get_refreshed_access_token()
             credentials = self.__access_token_response_to_credentials(refresh_response)
             self.__save_credentials(credentials, self.CREDENTIALS_PATH)
             self.credentials = credentials
