@@ -31,6 +31,15 @@ class AccessTokenResponse:
         self.token_type = token_type
 
 
+class Credentials:
+    def __init__(self, access_token: str, refresh_token: str, scope: str, expires: str, token_type: str):
+        self.access_token = access_token
+        self.refresh_token = refresh_token
+        self.scope = scope
+        self.expires = expires
+        self.token_type = token_type
+
+
 class Page:
     def __init__(self, entries: List, total: int):
         self.entries = entries

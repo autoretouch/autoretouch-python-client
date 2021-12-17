@@ -4,45 +4,55 @@ from unittest import TestCase
 from uuid import UUID
 from assertpy import assert_that
 
-from autoretouch_api_client.client import (
-    get_api_status, get_api_status_current, get_organizations, get_workflows,
-    upload_image, create_workflow_execution_for_image_reference, create_workflow_execution_for_image_file,
-    get_workflow_execution_details, download_workflow_execution_result_blocking, download_workflow_execution_result,
-    download_image, get_workflow_executions)
-from autoretouch_api_client.model import Organization, Workflow, WorkflowExecution
-from test.auth import create_or_get_credentials
+from autoretouch_api_client.client import AutoretouchClient
+from autoretouch_api_client.model import Organization, Workflow, WorkflowExecution, ApiConfig
+
+
+CREDENTIALS_PATH = "../tmp/credentials.json"
+CONFIG_DEV = ApiConfig(
+    BASE_API_URL="https://api.dev.autoretouch.com",
+    BASE_API_URL_CURRENT="https://api.dev.autoretouch.com/v1",
+    CLIENT_ID="DtLZblh4cfQdNc1iNXNV2JXy4zFL6qCM",
+    SCOPE="offline_access",
+    AUDIENCE="https://api.dev.autoretouch.com/",
+    AUTH_DOMAIN="https://dev-autoretouch.eu.auth0.com"
+)
 
 
 class HealthApiIntegrationTest(TestCase):
+    client = AutoretouchClient(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
+
     def test_health(self):
-        self.assertEqual(get_api_status(), 200)
+        self.assertEqual(self.client.get_api_status(), 200)
 
     def test_health_versioned(self):
-        self.assertEqual(get_api_status_current(), 200)
+        self.assertEqual(self.client.get_api_status_current(), 200)
 
 
 class AuthorizedApiIntegrationTest(TestCase):
-    access_token = create_or_get_credentials()
-
     # Warning! This integration test runs real workflow executions in your autoretouch account which will cost money.
+
+    client = AutoretouchClient(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
 
     def test_upload_image_then_start_workflow_execution(self):
         organization, workflow = self.__get_organization_and_workflow()
 
-        input_image_content_hash = upload_image(self.access_token, organization.id, "../assets/input_image.jpeg")
+        input_image_content_hash = self.client.upload_image(organization.id, "../assets/input_image.jpeg")
         self.assertIsNotNone(input_image_content_hash)
         self.assertEqual(input_image_content_hash, "8bcac2125bd98cd96ba75667b9a8832024970ac05bf4123f864bb63bcfefbcf7")
 
-        workflow_execution_id = create_workflow_execution_for_image_reference(
-            self.access_token, workflow.id, workflow.version, organization.id,
+        workflow_execution_id = self.client.create_workflow_execution_for_image_reference(
+            workflow.id, workflow.version, organization.id,
             input_image_content_hash, "input_image.jpeg", "image/jpeg", {"myLabel": "myValue"})
         self.assertIsNotNone(workflow_execution_id)
 
-        self.__assert_execution_has_started(organization, workflow, workflow_execution_id, input_image_content_hash, "input_image.jpeg", {"myLabel": "myValue"})
+        self.__assert_execution_has_started(
+            organization, workflow, workflow_execution_id, input_image_content_hash, "input_image.jpeg", {"myLabel": "myValue"})
         self.__assert_workflow_executions_contain_execution(organization, workflow, workflow_execution_id)
 
         self.__wait_for_execution_to_complete(organization, workflow_execution_id)
-        workflow_execution_completed = self.__get_completed_execution_and_assert_fields(organization, workflow, workflow_execution_id, input_image_content_hash, "input_image.jpeg", {"myLabel": "myValue"})
+        workflow_execution_completed = self.__get_completed_execution_and_assert_fields(
+            organization, workflow, workflow_execution_id, input_image_content_hash, "input_image.jpeg", {"myLabel": "myValue"})
 
         self.__download_result_and_assert_equal(organization, workflow_execution_completed)
 
@@ -50,33 +60,35 @@ class AuthorizedApiIntegrationTest(TestCase):
     def test_start_workflow_execution_immediately_and_wait(self):
         organization, workflow = self.__get_organization_and_workflow()
 
-        workflow_execution_id = create_workflow_execution_for_image_file(
-            self.access_token, workflow.id, workflow.version, organization.id,
+        workflow_execution_id = self.client.create_workflow_execution_for_image_file(
+            workflow.id, workflow.version, organization.id,
             "../assets/input_image.jpeg", {"myLabel": "myValue"})
         self.assertIsNotNone(workflow_execution_id)
 
         input_image_content_hash = "8bcac2125bd98cd96ba75667b9a8832024970ac05bf4123f864bb63bcfefbcf7"
-        self.__assert_execution_has_started(organization, workflow, workflow_execution_id, input_image_content_hash, "input_image.jpeg", {"myLabel": "myValue"})
+        self.__assert_execution_has_started(
+            organization, workflow, workflow_execution_id, input_image_content_hash, "input_image.jpeg", {"myLabel": "myValue"})
         self.__assert_workflow_executions_contain_execution(organization, workflow, workflow_execution_id)
 
-        result_bytes = download_workflow_execution_result_blocking(self.access_token, organization.id, workflow_execution_id)
+        result_bytes = self.client.download_workflow_execution_result_blocking(organization.id, workflow_execution_id)
         assert_that(len(result_bytes)).is_greater_than(0)
-        workflow_execution_completed = self.__get_completed_execution_and_assert_fields(organization, workflow, workflow_execution_id, input_image_content_hash, "input_image.jpeg", {"myLabel": "myValue"})
+        workflow_execution_completed = self.__get_completed_execution_and_assert_fields(
+            organization, workflow, workflow_execution_id, input_image_content_hash, "input_image.jpeg", {"myLabel": "myValue"})
 
         self.__download_result_and_assert_equal(organization, workflow_execution_completed)
 
     def __get_organization_and_workflow(self) -> Tuple[Organization, Workflow]:
-        organizations = get_organizations(self.access_token)
+        organizations = self.client.get_organizations()
         organization = organizations[0]
         self.assertIsNotNone(organization)
-        workflows = get_workflows(self.access_token, organization.id)
+        workflows = self.client.get_workflows(organization.id)
         workflow = workflows[0]
         self.assertIsNotNone(workflow)
         return organization, workflow
 
     def __assert_execution_has_started(self, organization: Organization, workflow: Workflow, workflow_execution_id: UUID,
                                        input_image_content_hash: str, input_image_name: str, labels: Dict[str, str]):
-        execution_details = get_workflow_execution_details(self.access_token, organization.id, workflow_execution_id)
+        execution_details = self.client.get_workflow_execution_details(organization.id, workflow_execution_id)
         assert_that(execution_details.workflow).is_equal_to(workflow.id)
         assert_that(execution_details.workflowVersion).is_equal_to(workflow.version)
         assert_that(execution_details.organizationId).is_equal_to(organization.id)
@@ -86,7 +98,7 @@ class AuthorizedApiIntegrationTest(TestCase):
         assert_that(["CREATED", "ACTIVE"]).contains(execution_details.status)
 
     def __assert_workflow_executions_contain_execution(self, organization: Organization, workflow: Workflow, workflow_execution_id: UUID):
-        workflow_executions = get_workflow_executions(self.access_token, organization.id, workflow.id)
+        workflow_executions = self.client.get_workflow_executions(organization.id, workflow.id)
         assert_that(len(workflow_executions.entries)).is_greater_than(0)
         assert_that(workflow_executions.total).is_greater_than(0)
         assert_that([entry.id for entry in workflow_executions.entries]).contains(workflow_execution_id)
@@ -96,7 +108,7 @@ class AuthorizedApiIntegrationTest(TestCase):
         interval = 1
         seconds_waited = 0
         while seconds_waited < timeout:
-            execution_details = get_workflow_execution_details(self.access_token, organization.id, workflow_execution_id)
+            execution_details = self.client.get_workflow_execution_details(organization.id, workflow_execution_id)
             if execution_details.status == "COMPLETED":
                 return
             elif execution_details.status == "FAILED" or execution_details.status == "PAYMENT_REQUIRED":
@@ -106,9 +118,9 @@ class AuthorizedApiIntegrationTest(TestCase):
         raise RuntimeError(f"Workflow Execution did not complete in {timeout} seconds")
 
     def __get_completed_execution_and_assert_fields(self, organization: Organization, workflow: Workflow, workflow_execution_id: UUID,
-                                                    input_image_content_hash: str, input_image_name: str, labels: Dict[str, str]) -> WorkflowExecution:
-        execution_details_completed = get_workflow_execution_details(self.access_token, organization.id,
-                                                                     workflow_execution_id)
+                                                    input_image_content_hash: str, input_image_name: str, labels: Dict[str, str]
+                                                    ) -> WorkflowExecution:
+        execution_details_completed = self.client.get_workflow_execution_details(organization.id, workflow_execution_id)
         assert_that(execution_details_completed.workflow).is_equal_to(workflow.id)
         assert_that(execution_details_completed.workflowVersion).is_equal_to(workflow.version)
         assert_that(execution_details_completed.organizationId).is_equal_to(organization.id)
@@ -124,13 +136,13 @@ class AuthorizedApiIntegrationTest(TestCase):
         return execution_details_completed
 
     def __download_result_and_assert_equal(self, organization: Organization, workflow_execution: WorkflowExecution):
-        result_bytes = download_workflow_execution_result_blocking(self.access_token, organization.id, workflow_execution.id)
+        result_bytes = self.client.download_workflow_execution_result_blocking(organization.id, workflow_execution.id)
         assert_that(len(result_bytes)).is_greater_than(0)
 
-        result_bytes_2 = download_workflow_execution_result(self.access_token, organization.id, workflow_execution.resultPath)
+        result_bytes_2 = self.client.download_workflow_execution_result(organization.id, workflow_execution.resultPath)
         assert_that(len(result_bytes_2)).is_greater_than(0)
         assert_that(result_bytes_2).is_equal_to(result_bytes)
 
-        result_bytes_3 = download_image(self.access_token, organization.id, workflow_execution.resultContentHash, workflow_execution.resultFileName)
+        result_bytes_3 = self.client.download_image(organization.id, workflow_execution.resultContentHash, workflow_execution.resultFileName)
         assert_that(len(result_bytes_3)).is_greater_than(0)
         assert_that(result_bytes_3).is_equal_to(result_bytes)
