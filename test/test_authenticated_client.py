@@ -1,38 +1,34 @@
+import os
 import time
 from typing import Tuple, Dict
-from unittest import TestCase
+from unittest import TestCase, skip
 from uuid import UUID
 from assertpy import assert_that
 
-from autoretouch_api_client.client import AutoretouchClient
-from autoretouch_api_client.model import Organization, Workflow, WorkflowExecution, ApiConfig
-
+from autoretouch_api_client.authenticated_client import AutoretouchClientAuthenticated
+from autoretouch_api_client.model import Organization, Workflow, WorkflowExecution
+from test.api_config_dev import CONFIG_DEV
 
 CREDENTIALS_PATH = "../tmp/credentials.json"
-CONFIG_DEV = ApiConfig(
-    BASE_API_URL="https://api.dev.autoretouch.com",
-    BASE_API_URL_CURRENT="https://api.dev.autoretouch.com/v1",
-    CLIENT_ID="DtLZblh4cfQdNc1iNXNV2JXy4zFL6qCM",
-    SCOPE="offline_access",
-    AUDIENCE="https://api.dev.autoretouch.com/",
-    AUTH_DOMAIN="https://dev-autoretouch.eu.auth0.com"
-)
 
 
 class HealthApiIntegrationTest(TestCase):
     def setUp(self) -> None:
-        self.client = AutoretouchClient(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
+        self.client = AutoretouchClientAuthenticated(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
 
     def test_health(self):
-        self.assertEqual(self.client.get_api_status(), 200)
+        assert_that(self.client.get_api_status()).is_equal_to(200)
 
     def test_health_versioned(self):
-        self.assertEqual(self.client.get_api_status_current(), 200)
+        assert_that(self.client.get_api_status_current()).is_equal_to(200)
 
 
 class RevokeAuthenticationIntegrationTest(TestCase):
+    @skip
     def test_revoke_authentication(self):
-        client = AutoretouchClient(credentials_path="../tmp/other-credentials.json", api_config=CONFIG_DEV)
+        credentials_path = "../tmp/other-credentials.json"
+
+        client = AutoretouchClientAuthenticated(credentials_path=credentials_path, api_config=CONFIG_DEV)
         assert_that(client.credentials.refresh_token).is_not_empty()
         assert_that(client.credentials.access_token).is_not_empty()
 
@@ -42,12 +38,14 @@ class RevokeAuthenticationIntegrationTest(TestCase):
 
         assert_that(client.get_organizations).raises(RuntimeError)
 
+        os.remove(credentials_path)
+
 
 class AuthenticatedApiIntegrationTest(TestCase):
     # Warning! This integration test runs real workflow executions in your autoretouch account which will cost money.
 
     def setUp(self) -> None:
-        self.client = AutoretouchClient(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
+        self.client = AutoretouchClientAuthenticated(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
 
     def test_upload_image_then_start_workflow_execution(self):
         organization, workflow = self.__get_organization_and_workflow()
