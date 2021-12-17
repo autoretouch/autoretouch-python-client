@@ -76,6 +76,10 @@ class AutoretouchClientAuthenticated:
         self._refresh_credentials_if_expired()
         return self.api.download_workflow_execution_result(self.credentials.access_token, organization_id, result_path)
 
+    def retry_workflow_execution(self, organization_id: UUID, workflow_execution_id: UUID) -> int:
+        self._refresh_credentials_if_expired()
+        return self.api.retry_workflow_execution(self.credentials.access_token, organization_id, workflow_execution_id)
+
     def send_feedback(self, organization_id: UUID, workflow_execution_id: UUID, thumbs_up: bool, expected_images_content_hashes: List[str] = []):
         self._refresh_credentials_if_expired()
         return self.api.send_feedback(self.credentials.access_token, organization_id, workflow_execution_id, thumbs_up, expected_images_content_hashes)
