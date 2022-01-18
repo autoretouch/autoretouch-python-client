@@ -1,23 +1,23 @@
 import json
-import time
-import webbrowser
 from datetime import datetime
 from json.decoder import JSONDecodeError
 from typing import Optional, List, Dict
 from uuid import UUID
 
-from autoretouch_api_client.client import AutoretouchClient, DEFAULT_USER_AGENT, DEFAULT_CONFIG
+from autoretouch_api_client.client import AutoretouchClient, DEFAULT_USER_AGENT, DEFAULT_API_CONFIG
+from autoretouch_api_client.device_authentication import authenticate_device_and_get_refresh_token
 from autoretouch_api_client.model import ApiConfig, Organization, Workflow, Page, WorkflowExecution, Credentials, \
-    DeviceCodeResponse, AccessTokenResponse
+    AccessTokenResponse
 
 
 class AutoretouchClientAuthenticated:
-    def __init__(self, credentials_path: str, user_agent: str = DEFAULT_USER_AGENT, api_config: ApiConfig = DEFAULT_CONFIG):
+    def __init__(self,
+                 refresh_token: str,
+                 user_agent: str = DEFAULT_USER_AGENT,
+                 api_config: ApiConfig = DEFAULT_API_CONFIG):
         self.api = AutoretouchClient(user_agent=user_agent, api_config=api_config)
-
-        self.CREDENTIALS_PATH = credentials_path
-        self.credentials = self._create_or_get_credentials()
-        self._refresh_credentials_if_expired()
+        refresh_response = self.api.get_refreshed_access_token(refresh_token=refresh_token)
+        self.credentials = self.__access_token_response_to_credentials(refresh_response)
 
     def get_api_status(self) -> int:
         return self.api.get_api_status()
@@ -87,50 +87,14 @@ class AutoretouchClientAuthenticated:
     def revoke_refresh_token(self) -> int:
         return self.api.revoke_refresh_token(self.credentials.refresh_token)
 
-    def _create_or_get_credentials(self) -> Credentials:
-        try:
-            with open(self.CREDENTIALS_PATH, "r") as credentials_file:
-                return Credentials(**json.load(credentials_file))
-        except (FileNotFoundError, JSONDecodeError):
-            device_code_response = self.api.get_device_code()
-            self.__open_browser_for_verification(device_code_response)
-            access_token_response = self.__wait_for_user_confirmation(device_code_response)
-            credentials = self.__access_token_response_to_credentials(access_token_response)
-            self.__save_credentials(credentials, self.CREDENTIALS_PATH)
-            return credentials
-
-    @staticmethod
-    def __save_credentials(credentials: Credentials, credentials_path: str):
-        with open(credentials_path, "w") as credentials_file:
-            json.dump(credentials, credentials_file, default=lambda o: o.__dict__, indent=4)
-
-    def __wait_for_user_confirmation(self, device_code_response: DeviceCodeResponse) -> AccessTokenResponse:
-        seconds_waited = 0
-        while seconds_waited < device_code_response.expires_in:
-            print("Waiting for user confirmation...")
-            try:
-                return self.api.get_access_and_refresh_token(device_code_response.device_code)
-            except:
-                seconds_waited += device_code_response.interval
-                time.sleep(device_code_response.interval)
-        raise RuntimeError(f"Device Code not confirmed after {seconds_waited} seconds")
-
-    @staticmethod
-    def __open_browser_for_verification(device_code_response: DeviceCodeResponse):
-        print(f"Open verification url {device_code_response.verification_uri_complete} in the browser "
-              f"and confirm the user code '{device_code_response.user_code}'.")
-        try:
-            webbrowser.open(device_code_response.verification_uri_complete)
-        except:
-            print("Opening web browser failed")
-
     def _refresh_credentials_if_expired(self):
-        if self.__token_expired(self.credentials.expires):
+        if not self.credentials.access_token or self.__token_expired(self.credentials.expires):
             print("access token expired, refreshing ...")
-            refresh_response = self.api.get_refreshed_access_token(refresh_token=self.credentials.refresh_token)
-            credentials = self.__access_token_response_to_credentials(refresh_response)
-            self.__save_credentials(credentials, self.CREDENTIALS_PATH)
-            self.credentials = credentials
+            self._refresh_credentials()
+
+    def _refresh_credentials(self):
+        refresh_response = self.api.get_refreshed_access_token(refresh_token=self.credentials.refresh_token)
+        self.credentials = self.__access_token_response_to_credentials(refresh_response)
 
     @staticmethod
     def __token_expired(expiration_isostring: str) -> bool:
@@ -153,3 +117,49 @@ class AutoretouchClientAuthenticated:
         now = int(datetime.utcnow().timestamp())
         expiration_timestamp = now + expires_in
         return datetime.fromtimestamp(expiration_timestamp).isoformat()
+
+
+class AutoretouchClientAuthenticatedPersistent(AutoretouchClientAuthenticated):
+    def __init__(self,
+                 credentials_path: str,
+                 refresh_token: Optional[str],
+                 user_agent: str = DEFAULT_USER_AGENT,
+                 api_config: ApiConfig = DEFAULT_API_CONFIG):
+        self.credentials_path = credentials_path
+        if not refresh_token:
+            refresh_token = self.__read_credentials().refresh_token
+        super().__init__(refresh_token, user_agent, api_config)
+        self.__save_credentials(self.credentials)
+
+    def _refresh_credentials(self):
+        super()._refresh_credentials()
+        self.__save_credentials(self.credentials)
+
+    def __read_credentials(self) -> Credentials:
+        try:
+            with open(self.credentials_path, "r") as credentials_file:
+                return Credentials(**json.load(credentials_file))
+        except (FileNotFoundError, JSONDecodeError):
+            raise RuntimeError("Credentials file not found or could be read. Specify a refresh token.")
+
+    def __save_credentials(self, credentials: Credentials):
+        with open(self.credentials_path, "w") as credentials_file:
+            json.dump(credentials, credentials_file, default=lambda o: o.__dict__, indent=4)
+
+
+def authenticate_device_and_get_client(user_agent: str = DEFAULT_USER_AGENT,
+                                       api_config: ApiConfig = DEFAULT_API_CONFIG):
+    refresh_token = authenticate_device_and_get_refresh_token(user_agent, api_config)
+    return AutoretouchClientAuthenticated(refresh_token, user_agent, api_config)
+
+
+def authenticate_device_and_get_client_with_persistence(credentials_path: str,
+                                                        user_agent: str = DEFAULT_USER_AGENT,
+                                                        api_config: ApiConfig = DEFAULT_API_CONFIG):
+    try:
+        return AutoretouchClientAuthenticatedPersistent(credentials_path=credentials_path, refresh_token=None,
+                                                        user_agent=user_agent, api_config=api_config)
+    except RuntimeError:
+        refresh_token = authenticate_device_and_get_refresh_token(user_agent, api_config)
+        return AutoretouchClientAuthenticatedPersistent(credentials_path=credentials_path, refresh_token=refresh_token,
+                                                        user_agent=user_agent, api_config=api_config)

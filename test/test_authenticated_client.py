@@ -5,16 +5,18 @@ from unittest import TestCase, skip
 from uuid import UUID
 from assertpy import assert_that
 
-from autoretouch_api_client.authenticated_client import AutoretouchClientAuthenticated
+from autoretouch_api_client.authenticated_client import AutoretouchClientAuthenticated, \
+    authenticate_device_and_get_client, authenticate_device_and_get_client_with_persistence
 from autoretouch_api_client.model import Organization, Workflow, WorkflowExecution
 from test.api_config_dev import CONFIG_DEV
 
 CREDENTIALS_PATH = "../tmp/credentials.json"
+USER_AGENT = "Sample-Python-Unit-Test-0.0.1"
 
 
 class HealthApiIntegrationTest(TestCase):
     def setUp(self) -> None:
-        self.client = AutoretouchClientAuthenticated(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
+        self.client = authenticate_device_and_get_client_with_persistence(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV, user_agent=USER_AGENT)
 
     def test_health(self):
         assert_that(self.client.get_api_status()).is_equal_to(200)
@@ -28,7 +30,7 @@ class RevokeAuthenticationIntegrationTest(TestCase):
     def test_revoke_authentication(self):
         credentials_path = "../tmp/other-credentials.json"
 
-        client = AutoretouchClientAuthenticated(credentials_path=credentials_path, api_config=CONFIG_DEV)
+        client = authenticate_device_and_get_client_with_persistence(credentials_path=credentials_path, api_config=CONFIG_DEV, user_agent=USER_AGENT)
         assert_that(client.credentials.refresh_token).is_not_empty()
         assert_that(client.credentials.access_token).is_not_empty()
 
@@ -45,7 +47,7 @@ class AuthenticatedApiIntegrationTest(TestCase):
     # Warning! This integration test runs real workflow executions in your autoretouch account which will cost money.
 
     def setUp(self) -> None:
-        self.client = AutoretouchClientAuthenticated(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV)
+        self.client = authenticate_device_and_get_client_with_persistence(credentials_path=CREDENTIALS_PATH, api_config=CONFIG_DEV, user_agent=USER_AGENT)
 
     def test_upload_image_then_start_workflow_execution(self):
         organization, workflow = self.__get_organization_and_workflow()

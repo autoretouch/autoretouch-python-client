@@ -11,7 +11,7 @@ from autoretouch_api_client.model import (
     ApiConfig, Organization, Page, Workflow, DeviceCodeResponse, AccessTokenResponse, WorkflowExecution)
 
 
-DEFAULT_CONFIG = ApiConfig(
+DEFAULT_API_CONFIG = ApiConfig(
     BASE_API_URL="https://api.autoretouch.com",
     BASE_API_URL_CURRENT="https://api.autoretouch.com/v1",
     CLIENT_ID="V8EkfbxtBi93cAySTVWAecEum4d6pt4J",
@@ -19,11 +19,11 @@ DEFAULT_CONFIG = ApiConfig(
     AUDIENCE="https://api.autoretouch.com",
     AUTH_DOMAIN="https://auth.autoretouch.com"
 )
-DEFAULT_USER_AGENT = "samplePythonApiClient"
+DEFAULT_USER_AGENT = "Sample-Python-Api-Client-0.0.1"
 
 
 class AutoretouchClient:
-    def __init__(self, user_agent: str = DEFAULT_USER_AGENT, api_config: ApiConfig = DEFAULT_CONFIG):
+    def __init__(self, user_agent: str = DEFAULT_USER_AGENT, api_config: ApiConfig = DEFAULT_API_CONFIG):
         self.USER_AGENT = user_agent
         self.API_CONFIG = api_config
 
