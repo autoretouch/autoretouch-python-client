@@ -11,7 +11,7 @@ from autoretouch_api_client.model import Organization, Workflow, WorkflowExecuti
 from test.api_config_dev import CONFIG_DEV
 
 CREDENTIALS_PATH = "../tmp/credentials.json"
-USER_AGENT = "Sample-Python-Unit-Test-0.0.1"
+USER_AGENT = "Python-Unit-Test-0.0.1"
 
 
 class HealthApiIntegrationTest(TestCase):
