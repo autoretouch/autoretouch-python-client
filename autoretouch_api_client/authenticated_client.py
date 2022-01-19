@@ -119,6 +119,11 @@ class AutoretouchClientAuthenticated:
         return datetime.fromtimestamp(expiration_timestamp).isoformat()
 
 
+class NoCredentialsOrRefreshTokenError(RuntimeError):
+    def __init__(self):
+        super().__init__("Credentials file not found or could be read. Specify a refresh token.")
+
+
 class AutoretouchClientAuthenticatedPersistent(AutoretouchClientAuthenticated):
     def __init__(self,
                  credentials_path: str,
@@ -131,6 +136,7 @@ class AutoretouchClientAuthenticatedPersistent(AutoretouchClientAuthenticated):
         super().__init__(refresh_token, user_agent, api_config)
         self.__save_credentials(self.credentials)
 
+    # override
     def _refresh_credentials(self):
         super()._refresh_credentials()
         self.__save_credentials(self.credentials)
@@ -140,7 +146,7 @@ class AutoretouchClientAuthenticatedPersistent(AutoretouchClientAuthenticated):
             with open(self.credentials_path, "r") as credentials_file:
                 return Credentials(**json.load(credentials_file))
         except (FileNotFoundError, JSONDecodeError):
-            raise RuntimeError("Credentials file not found or could be read. Specify a refresh token.")
+            raise NoCredentialsOrRefreshTokenError()
 
     def __save_credentials(self, credentials: Credentials):
         with open(self.credentials_path, "w") as credentials_file:
@@ -159,7 +165,7 @@ def authenticate_device_and_get_client_with_persistence(credentials_path: str,
     try:
         return AutoretouchClientAuthenticatedPersistent(credentials_path=credentials_path, refresh_token=None,
                                                         user_agent=user_agent, api_config=api_config)
-    except RuntimeError:
+    except NoCredentialsOrRefreshTokenError:
         refresh_token = authenticate_device_and_get_refresh_token(user_agent, api_config)
         return AutoretouchClientAuthenticatedPersistent(credentials_path=credentials_path, refresh_token=refresh_token,
                                                         user_agent=user_agent, api_config=api_config)

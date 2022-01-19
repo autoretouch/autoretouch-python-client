@@ -5,8 +5,7 @@ from unittest import TestCase, skip
 from uuid import UUID
 from assertpy import assert_that
 
-from autoretouch_api_client.authenticated_client import AutoretouchClientAuthenticated, \
-    authenticate_device_and_get_client, authenticate_device_and_get_client_with_persistence
+from autoretouch_api_client.authenticated_client import authenticate_device_and_get_client_with_persistence
 from autoretouch_api_client.model import Organization, Workflow, WorkflowExecution
 from test.api_config_dev import CONFIG_DEV
 
