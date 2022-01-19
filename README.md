@@ -1,5 +1,7 @@
 # autoretouch Python Client
 
+Work in Progress Python client implementation for the most important public API endpoints for https://www.autoretouch.com.
+
 API documentation: https://docs.api.autoretouch.com
 
 
@@ -9,7 +11,6 @@ API documentation: https://docs.api.autoretouch.com
 python3 -m venv venv 
 source venv/bin/activate
 pip install -r requirements.txt
-pip install -r requirements-test.txt
 ```
 
 ## Tests
@@ -23,6 +24,12 @@ python -m unittest discover test
 
 ## Authentication
 
+### Prerequisites
+
+You need a free account at https://app.autoretouch.com.
+
+### Authenticate with Refresh Token
+
 Create a device connection in the autoretouch app at https://app.autoretouch.com/profile > API Information and copy the refresh token. 
 Store it securely, e.g. in an environment variable or your keychain.
 
@@ -33,6 +40,8 @@ from autoretouch_api_client.authenticated_client import AutoretouchClientAuthent
 refresh_token = os.getenv('AUTORETOUCH_REFRESH_TOKEN')
 client = AutoretouchClientAuthenticated(refresh_token)
 ```
+
+### Authenticate with Device Connection
 
 If you want to create the device connection within your application without using the autoretouch app:
 
@@ -51,6 +60,8 @@ from autoretouch_api_client.authenticated_client import authenticate_device_and_
 
 client = authenticate_device_and_get_client()
 ```
+
+### Credential Storage
 
 There is also a basic implementation of credential storage.
 The credentials are stored in a JSON file, this may or may not be sufficient for your security requirements.
