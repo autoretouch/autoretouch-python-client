@@ -19,7 +19,7 @@ DEFAULT_API_CONFIG = ApiConfig(
     AUDIENCE="https://api.autoretouch.com",
     AUTH_DOMAIN="https://auth.autoretouch.com"
 )
-DEFAULT_USER_AGENT = "Python-Api-Client-0.0.1"
+DEFAULT_USER_AGENT = "Autoretouch-Python-Api-Client-0.0.1"
 
 
 class AutoretouchClient:

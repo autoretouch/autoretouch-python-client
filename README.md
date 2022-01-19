@@ -13,15 +13,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Tests
-
-Warning! The integration tests run real workflow executions in your autoretouch account which will cost money.
-
-```shell script
-pip install -r requirements-test.txt
-python -m unittest discover test
-```
-
 ## Authentication
 
 ### Prerequisites

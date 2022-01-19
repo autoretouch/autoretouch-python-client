@@ -121,7 +121,7 @@ class AutoretouchClientAuthenticated:
 
 class NoCredentialsOrRefreshTokenError(RuntimeError):
     def __init__(self):
-        super().__init__("Credentials file not found or could be read. Specify a refresh token.")
+        super().__init__("Credentials file not found or could not be read. Please specify a refresh token.")
 
 
 class AutoretouchClientAuthenticatedPersistent(AutoretouchClientAuthenticated):
