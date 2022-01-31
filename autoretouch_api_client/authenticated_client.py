@@ -41,6 +41,10 @@ class AutoretouchClientAuthenticated:
         self._refresh_credentials_if_expired()
         return self.api.upload_image(self.credentials.access_token, organization_id, filepath)
 
+    def upload_image_from_bytes(self, organization_id: UUID, content: bytes, filename: str, mimetype: Optional[str] = None) -> str:
+        self._refresh_credentials_if_expired()
+        return self.api.upload_image_from_bytes(self.credentials.access_token, organization_id=organization_id, mimetype=mimetype, filename=filename, content=content)
+
     def download_image(self, organization_id: UUID, content_hash: str, output_filename: str) -> bytes:
         self._refresh_credentials_if_expired()
         return self.api.download_image(self.credentials.access_token, organization_id, content_hash, output_filename)

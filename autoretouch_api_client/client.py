@@ -1,6 +1,7 @@
 import json
 import os
 import mimetypes
+from io import BytesIO
 from uuid import UUID
 
 import requests
@@ -105,6 +106,17 @@ class AutoretouchClient:
         with open(filepath, 'rb') as file:
             filename = os.path.basename(file.name)
             mimetype, _ = mimetypes.guess_type(file.name)
+            files = [('file', (filename, file, mimetype))]
+            response = requests.post(url=url, headers=headers, files=files)
+        self.__assert_response_ok(response)
+        return response.content.decode(response.encoding)
+
+    def upload_image_from_bytes(self, access_token: str, organization_id: UUID, content: bytes, filename: str, mimetype: Optional[str] = None) -> str:
+        url = f"{self.API_CONFIG.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
+        headers = {"User-Agent": self.USER_AGENT, "Authorization": f"Bearer {access_token}"}
+        if not mimetype:
+            mimetype, _ = mimetypes.guess_type(filename)
+        with BytesIO(content) as file:
             files = [('file', (filename, file, mimetype))]
             response = requests.post(url=url, headers=headers, files=files)
         self.__assert_response_ok(response)

@@ -70,6 +70,21 @@ class AuthenticatedApiIntegrationTest(TestCase):
 
         self.__download_result_and_assert_equal(organization, workflow_execution_completed)
 
+    def test_upload_image_from_memory(self):
+        organization, _ = self.__get_organization_and_workflow()
+        with open("../assets/input_image.jpeg", 'rb') as file:
+            file_content = file.read()
+        input_image_content_hash = self.client.upload_image_from_bytes(organization_id=organization.id, content=file_content, mimetype="image/jpeg", filename="input_image.jpeg")
+        self.assertIsNotNone(input_image_content_hash)
+        self.assertEqual(input_image_content_hash, "8bcac2125bd98cd96ba75667b9a8832024970ac05bf4123f864bb63bcfefbcf7")
+
+    def test_upload_image_from_disk(self):
+        organization, _ = self.__get_organization_and_workflow()
+
+        input_image_content_hash = self.client.upload_image(organization.id, "../assets/input_image.jpeg")
+        self.assertIsNotNone(input_image_content_hash)
+        self.assertEqual(input_image_content_hash, "8bcac2125bd98cd96ba75667b9a8832024970ac05bf4123f864bb63bcfefbcf7")
+
     def test_start_workflow_execution_immediately_and_wait(self):
         organization, workflow = self.__get_organization_and_workflow()
 
