@@ -13,18 +13,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Authentication
-
-### Prerequisites
-
-You need a free account at https://app.autoretouch.com.
-
-### Authenticate with Refresh Token
-
-### Authenticate with Device Connection
-
-### Credential Storage
-
 ## Usage
 
 This package exposes a single class `AutoretouchClient` allowing high- and low-level interactions with the autoRetouch API.
