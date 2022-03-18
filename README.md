@@ -27,38 +27,76 @@ You need a free account at https://app.autoretouch.com.
 
 ## Usage
 
-This package exposes a single class `AutoretouchClient` allowing high and low level interactions with the autoRetouch API.
-In most cases, you would like to process images according to some workflows within the scope of an organization.
+This package exposes a single class `AutoretouchClient` allowing high- and low-level interactions with the autoRetouch API.
 
-Once you copied your `organization_id` from (https://app.autoretouch.com/organization) > Copy Organization ID.
+### High-level
 
-To refer to a workflow, retrieve the workflow id at: https://app.autoretouch.com/workflows > ⋮ > Workflow API Information > id.
+#### Batch 
 
-Example to upload an image and process it through a workflow:
+In most cases, you would like to process images according to some workflow within the scope of an organization.
+To do so, you can simply
+
+```python3
+from autoretouch_api_client.client import AutoRetouchAPIClient
+
+organization_id = "e722e62e-5b2e-48e1-8638-25890e7279e3"
+
+ar_client = AutoRetouchAPIClient(
+    organization_id=organization_id,
+    # by default the client saves and reloads your credentials here:
+    credentials_path="~/.config/autoretouch-credentials.json"
+)
+
+workflow_id = "26740cd0-3a04-4329-8ba2-e0d6de5a4aaf"
+input_dir = "images_to_retouch/"
+output_dir = "retouched_images/"
+
+# starts a thread for each image and download the results to output_dir
+ar_client.process_batch(workflow_id, input_dir, output_dir)
+```
+---
+**Note**
+
+- Get your `organization_id` from https://app.autoretouch.com/organization > Copy Organization ID.
+- Get your `workflow_id` from https://app.autoretouch.com/workflows > `⋮` > Workflow API Information > id.
+---
+
+#### Single Image
+
+If you wish to process a single image with a workflow, you can do
 
 ```python
-# ...
-organization_id = "e722e62e-5b2e-48e1-8638-25890e7279e3"
-workflow_id = "26740cd0-3a04-4329-8ba2-e0d6de5a4aaf"
-
-input_image_content_hash = client.upload_image(image_path="input_image.jpg", organization_id=organization_id)
-
-workflow_execution_id = client.create_workflow_execution_for_image_reference(workflow_id=workflow_id,
-                                                                             image_content_hash=input_image_content_hash,
-                                                                             image_name="input_image.jpg",
-                                                                             mimetype="image/jpeg",
-                                                                             labels={"myLabel": "myValue"},
-                                                                             workflow_version_id=,
-                                                                             organization_id=organization_id)
-
-workflow_execution_status = client.get_workflow_execution_details(workflow_execution_id=workflow_execution_id,
-                                                                  organization_id=organization_id).status
-
-if workflow_execution_status == "COMPLETED":
-    result_image_bytes = client.download_result_blocking(workflow_execution_id=workflow_execution_id,
-                                                         organization_id=organization_id)
-
-    with open("result_image.jpg", "wb") as f:
-        f.write(result_image_bytes)
-
+ar_client.process_image("my_image.png", workflow_id, output_dir)
 ```
+
+This is the method called internally by `proces_batch`. It will 
+1. upload the image
+2. start an execution
+3. poll every 2 seconds for the status of the execution
+4. download the result to `output_dir` or return `False` if the execution failed 
+
+This is the recommended way to efficiently process images through our asynchronous api.  
+
+#### Authentication
+
+The `AutoRetouchAPIClient` authenticates itself with the [device flow](https://auth0.com/docs/get-started/authentication-and-authorization-flow/device-authorization-flow) of `auth0`.
+Upon instantiation of the client, you can configure
+- whether credentials should be persisted or not through `save_credentials=`
+- where credentials should be persisted/loaded from through `credentials_path=`
+
+If you don't pass a `credentials_path`, the client will first check if you passed a `refresh_token` with which it can obtain credentials.
+
+If this argument is also `None`, the client will trigger a device flow from the top.
+It will open a window in your browser asking you to confirm a device code.
+The client will be authenticated once you confirmed.
+
+By default, `credentials_path` and `refresh_token` are `None` but `save_credentials=True`.
+The first time you use the client, this triggers the device flow and saves the obtained credentials to `~/.config/autoretouch-credentials.json`.
+After that, it automatically falls back to this path and authenticates itself without you having to do anything :wink:
+
+
+### Low-level Endpoints
+
+for finer interactions with the API, the client exposes methods corresponding to endpoints.
+
+TODO : table with `method name & signature | api docs link`

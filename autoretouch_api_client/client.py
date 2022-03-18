@@ -5,7 +5,7 @@ from io import BytesIO
 from time import sleep
 from uuid import UUID
 import requests
-from typing import Dict, List, Optional, Callable, TypeVar
+from typing import Dict, List, Optional, Callable, TypeVar, Union
 from functools import wraps
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -51,14 +51,24 @@ def authenticated(endpoint: T):
 
 
 class AutoRetouchAPIClient:
+    """
+    autoRetouch API client
+
+    :param organization_id:
+    :param api_config:
+    :param credentials_path: optional path to a .json credential file
+    :param refresh_token: optional refresh_token for requesting up-to-dates access_token
+    :param user_agent:
+    :param save_credentials: whether the credentials should be saved. Default: True
+    """
     def __init__(
-        self,
-        organization_id: Optional[UUID] = None,
-        api_config: ApiConfig = DEFAULT_API_CONFIG,
-        credentials_path: Optional[str] = None,
-        refresh_token: Optional[str] = None,
-        user_agent: str = DEFAULT_USER_AGENT,
-        save_credentials: bool = True,
+            self,
+            organization_id: Optional[Union[str, UUID]] = None,
+            api_config: ApiConfig = DEFAULT_API_CONFIG,
+            credentials_path: Optional[str] = None,
+            refresh_token: Optional[str] = None,
+            user_agent: str = DEFAULT_USER_AGENT,
+            save_credentials: bool = True,
     ):
         self.api_config = api_config
         self.user_agent = user_agent
@@ -158,7 +168,7 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def get_workflow_executions(
-        self, workflow_id: UUID, organization_id: Optional[UUID] = None
+            self, workflow_id: UUID, organization_id: Optional[UUID] = None
     ) -> Page:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution?workflow={workflow_id}&limit=50&offset=0&organization={organization_id}"
@@ -170,7 +180,7 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def upload_image(
-        self, image_path: str, organization_id: Optional[UUID] = None
+            self, image_path: str, organization_id: Optional[UUID] = None
     ) -> str:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
@@ -184,11 +194,11 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def upload_image_from_bytes(
-        self,
-        image_content: bytes,
-        image_name: str,
-        mimetype: Optional[str] = None,
-        organization_id: Optional[UUID] = None,
+            self,
+            image_content: bytes,
+            image_name: str,
+            mimetype: Optional[str] = None,
+            organization_id: Optional[UUID] = None,
     ) -> str:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
@@ -202,12 +212,12 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def create_workflow_execution_for_image_file(
-        self,
-        workflow_id: UUID,
-        image_path: str,
-        labels: Optional[Dict[str, str]] = None,
-        workflow_version_id: Optional[UUID] = None,
-        organization_id: Optional[UUID] = None,
+            self,
+            workflow_id: UUID,
+            image_path: str,
+            labels: Optional[Dict[str, str]] = None,
+            workflow_version_id: Optional[UUID] = None,
+            organization_id: Optional[UUID] = None,
     ) -> UUID:
         organization_id = self._get_organization_id(organization_id)
         labels = labels or {}
@@ -232,13 +242,13 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def create_workflow_execution_for_image_reference(
-        self,
-        workflow_id: UUID,
-        image_content_hash: str,
-        image_name: str,
-        labels: Optional[Dict[str, str]] = None,
-        workflow_version_id: Optional[UUID] = None,
-        organization_id: Optional[UUID] = None,
+            self,
+            workflow_id: UUID,
+            image_content_hash: str,
+            image_name: str,
+            labels: Optional[Dict[str, str]] = None,
+            workflow_version_id: Optional[UUID] = None,
+            organization_id: Optional[UUID] = None,
     ) -> UUID:
         organization_id = self._get_organization_id(organization_id)
         version_str = f"&version={workflow_version_id}" if workflow_version_id else ""
@@ -265,7 +275,7 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def get_workflow_execution_details(
-        self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
+            self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> WorkflowExecution:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}?organization={organization_id}"
@@ -276,7 +286,7 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def get_workflow_execution_status_blocking(
-        self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
+            self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> str:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/status?organization={organization_id}"
@@ -288,10 +298,10 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def download_image(
-        self,
-        image_content_hash: str,
-        image_name: str,
-        organization_id: Optional[UUID] = None,
+            self,
+            image_content_hash: str,
+            image_name: str,
+            organization_id: Optional[UUID] = None,
     ) -> bytes:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/image/{image_content_hash}/{image_name}?organization={organization_id}"
@@ -301,7 +311,7 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def download_result_blocking(
-        self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
+            self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> bytes:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/result/default?organization={organization_id}"
@@ -311,7 +321,7 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def download_result(
-        self, result_path: str, organization_id: Optional[UUID] = None
+            self, result_path: str, organization_id: Optional[UUID] = None
     ) -> bytes:
         assert result_path.startswith("/image/")
         organization_id = self._get_organization_id(organization_id)
@@ -322,7 +332,7 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def retry_workflow_execution(
-        self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
+            self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> int:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/retry?organization={organization_id}"
@@ -331,11 +341,11 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def send_feedback(
-        self,
-        workflow_execution_id: UUID,
-        thumbs_up: bool,
-        expected_images_content_hashes: List[str] = [],
-        organization_id: Optional[UUID] = None,
+            self,
+            workflow_execution_id: UUID,
+            thumbs_up: bool,
+            expected_images_content_hashes: List[str] = [],
+            organization_id: Optional[UUID] = None,
     ):
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/feedback?organization={organization_id}"
@@ -350,7 +360,7 @@ class AutoRetouchAPIClient:
     # ****** HIGH-LEVEL METHODS ******
 
     def process_image(
-        self, image_path: str, workflow_id: UUID, output_dir: str
+            self, image_path: str, workflow_id: UUID, output_dir: str
     ) -> bool:
         """upload image, start workflow, download result to `output_dir`"""
         execution_id = self.create_workflow_execution_for_image_file(
@@ -370,7 +380,7 @@ class AutoRetouchAPIClient:
             f.write(result)
         return True
 
-    def process_batch(self, image_dir: str, workflow_id: UUID, target_dir: str):
+    def process_batch(self, workflow_id: Union[str, UUID], image_dir: str, target_dir: str):
         """apply a workflow to a directory of images and download the results to `target_dir`"""
         image_paths = [
             *filter(
@@ -378,7 +388,7 @@ class AutoRetouchAPIClient:
                 os.listdir(image_dir),
             )
         ]
-        executor = ThreadPoolExecutor(max_workers=len(image_paths))
+        executor = ThreadPoolExecutor(max_workers=min(200, len(image_paths)))
         futures_to_images = {}
         for path in image_paths:
             path = os.path.join(image_dir, path)

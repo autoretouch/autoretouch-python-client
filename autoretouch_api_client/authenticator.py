@@ -9,6 +9,7 @@ from autoretouch_api_client.model import Credentials, DeviceCodeResponse
 
 __all__ = ["Authenticator"]
 
+AR_API_CREDENTIALS = os.path.join(os.path.expanduser("~"), ".config", "autoretouch-credentials.json")
 
 def _open_browser_for_verification(device_code_response: DeviceCodeResponse):
     print(
@@ -56,11 +57,14 @@ class Authenticator:
         if self.credentials_path is not None and os.path.isfile(self.credentials_path):
             self.credentials = self._read_credentials_file()
             self.refresh_credentials()
-            return self
-        if self.refresh_token is not None:
+        elif self.refresh_token is not None:
             self.credentials = self.api.get_credentials_from_refresh_token(
                 self.refresh_token
             )
+        elif os.path.isfile(AR_API_CREDENTIALS):
+            self.credentials_path = AR_API_CREDENTIALS
+            self.credentials = self._read_credentials_file()
+            self.refresh_credentials()
         else:
             device_code_response = self.api.get_device_code()
             _open_browser_for_verification(device_code_response)
@@ -69,9 +73,7 @@ class Authenticator:
             )
         if self.save_credentials:
             if not self.credentials_path:
-                self.credentials_path = os.path.join(
-                    "~", ".config", "autoretouch-credentials.json"
-                )
+                self.credentials_path = AR_API_CREDENTIALS
             self._save_credentials()
         return self
 
