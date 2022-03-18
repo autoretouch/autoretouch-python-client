@@ -1,96 +1,110 @@
-from enum import Enum
-from typing import List, Dict, Optional
+from datetime import datetime
+from typing import List, Dict, Optional, Union
 from uuid import UUID
+import inspect
+from dataclasses import dataclass
 
 
+@dataclass
+class BaseModel:
+    @classmethod
+    def from_dict(cls, dct: Dict):
+        """method to instantiate a dataclass without TypeError on extra arguments"""
+        params = inspect.signature(cls).parameters
+        return cls(**{k: v for k, v in dct.items() if k in params})
+
+    @staticmethod
+    def to_uuid(value):
+        return value if isinstance(value, UUID) else UUID(value)
+
+
+@dataclass
 class ApiConfig:
-    def __init__(self, BASE_API_URL: str, BASE_API_URL_CURRENT: str, CLIENT_ID: str, SCOPE: str, AUDIENCE: str, AUTH_DOMAIN: str):
-        self.BASE_API_URL = BASE_API_URL
-        self.BASE_API_URL_CURRENT = BASE_API_URL_CURRENT
-        self.CLIENT_ID = CLIENT_ID
-        self.SCOPE = SCOPE
-        self.AUDIENCE = AUDIENCE
-        self.AUTH_DOMAIN = AUTH_DOMAIN
+    BASE_API_URL: str
+    BASE_API_URL_CURRENT: str
+    CLIENT_ID: str
+    SCOPE: str
+    AUDIENCE: str
+    AUTH_DOMAIN: str
 
 
-class DeviceCodeResponse:
-    def __init__(self, device_code: str, user_code: str, verification_uri_complete: str, expires_in: int, interval: int, **kwargs):
-        self.device_code = device_code
-        self.user_code = user_code
-        self.verification_uri_complete = verification_uri_complete
-        self.expires_in = expires_in
-        self.interval = interval
+@dataclass
+class DeviceCodeResponse(BaseModel):
+    device_code: str
+    user_code: str
+    verification_uri_complete: str
+    expires_in: int
+    interval: int
 
 
-class AccessTokenResponse:
-    def __init__(self, access_token: str, refresh_token: str, scope: str, expires_in: int, token_type: str):
-        self.access_token = access_token
-        self.refresh_token = refresh_token
-        self.scope = scope
-        self.expires_in = expires_in
-        self.token_type = token_type
-
-
+@dataclass
 class Credentials:
-    def __init__(self, access_token: str, refresh_token: str, scope: str, expires: str, token_type: str):
-        self.access_token = access_token
-        self.refresh_token = refresh_token
-        self.scope = scope
-        self.expires = expires
-        self.token_type = token_type
+    access_token: str
+    refresh_token: str
+    scope: str
+    expires_in: int
+    token_type: str
+    expires_at: Optional[int] = None
+
+    def __post_init__(self):
+        if self.expires_at is None:
+            self.expires_at = self.expires_in + int(datetime.utcnow().timestamp())
 
 
+@dataclass
 class Page:
-    def __init__(self, entries: List, total: int):
-        self.entries = entries
-        self.total = total
+    entries: List
+    total: int
 
 
-class Organization:
-    def __init__(self, **kwargs):
-        self.id: UUID = UUID(kwargs.get("id"))
-        self.version: UUID = UUID(kwargs.get("version"))
-        self.name: str = kwargs.get("name")
-        self.members: List = kwargs.get("members")
+@dataclass
+class Organization(BaseModel):
+    id: Union[str, UUID]
+    version: Union[str, UUID]
+    name: str
+    members: List
 
-    def __repr__(self):
-        return f"Organization {self.__dict__}"
-
-
-class Workflow:
-    def __init__(self, **kwargs):
-        self.id: UUID = UUID(kwargs.get("id"))
-        self.version: UUID = UUID(kwargs.get("version"))
-        self.name: str = kwargs.get("name")
-        self.date: str = kwargs.get("date")
-        self.author: Dict = kwargs.get("author")
-        self.workflowComponents: List = kwargs.get("workflowComponents")
-        self.executionPrice: int = kwargs.get("executionPrice")
-
-    def __repr__(self):
-        return f"Workflow {self.__dict__}"
+    def __post_init__(self):
+        self.id = self.to_uuid(self.id)
+        self.version = self.to_uuid(self.version)
 
 
-class WorkflowExecution:
-    def __init__(self, **kwargs):
-        self.id: UUID = UUID(kwargs.get("id"))
-        self.workflow: UUID = UUID(kwargs.get("workflow"))
-        self.workflowVersion: UUID = UUID(kwargs.get("workflowVersion"))
-        self.workflowName: str = kwargs.get("workflowName")
-        self.organizationId: UUID = UUID(kwargs.get("organizationId"))
-        self.status: str = kwargs.get("status")
-        self.userId: str = kwargs.get("userId")
-        self.createdAt: str = kwargs.get("createdAt")
-        self.startedAt: Optional[str] = kwargs.get("startedAt")
-        self.finishedAt: Optional[str] = kwargs.get("finishedAt")
-        self.inputFileName: str = kwargs.get("inputFileName")
-        self.inputContentHash: str = kwargs.get("inputContentHash")
-        self.resultContentHash: Optional[str] = kwargs.get("resultContentHash")
-        self.resultContentType: Optional[str] = kwargs.get("resultContentType")
-        self.resultFileName: Optional[str] = kwargs.get("resultFileName")
-        self.resultPath: Optional[str] = kwargs.get("resultPath")
-        self.labels: Dict[str, str] = kwargs.get("labels")
-        self.chargedCredits: int = kwargs.get("chargedCredits")
+@dataclass
+class Workflow(BaseModel):
+    id: Union[str, UUID]
+    version: Union[str, UUID]
+    name: str
+    date: str
+    author: Dict
+    workflowComponents: List
+    executionPrice: int
 
-    def __repr__(self):
-        return f"Workflow Execution {self.__dict__}"
+    def __post_init__(self):
+        self.id = self.to_uuid(self.id)
+        self.version = self.to_uuid(self.version)
+
+
+@dataclass
+class WorkflowExecution(BaseModel):
+    id: Union[str, UUID]
+    workflow: Union[str, UUID]
+    workflowVersion: Union[str, UUID]
+    workflowName: str
+    organizationId: Union[str, UUID]
+    status: str
+    userId: str
+    createdAt: str
+    startedAt: Optional[str]
+    finishedAt: Optional[str]
+    inputFileName: str
+    inputContentHash: str
+    resultContentHash: Optional[str]
+    resultContentType: Optional[str]
+    resultFileName: Optional[str]
+    resultPath: Optional[str]
+    labels: Dict[str, str]
+    chargedCredits: int
+
+    def __post_init__(self):
+        for attr in ["id", "workflow", "workflowVersion", "organizationId"]:
+            setattr(self, attr, self.to_uuid(getattr(self, attr)))
