@@ -30,6 +30,13 @@ DEFAULT_API_CONFIG = ApiConfig(
     AUDIENCE="https://api.autoretouch.com",
     AUTH_DOMAIN="https://auth.autoretouch.com",
 )
+AR_CREDENTIALS = os.environ.get(
+    "AUTORETOUCH_CREDENTIALS_PATH",
+    os.path.join(os.path.expanduser("~"), ".config", "autoretouch-credentials.json")
+)
+AR_REFRESH_TOKEN = os.environ.get(
+    "AUTORETOUCH_REFRESH_TOKEN", None
+)
 DEFAULT_USER_AGENT = "Autoretouch-Python-Api-Client-0.0.1"
 
 T = TypeVar("T", bound=Callable)
@@ -65,8 +72,8 @@ class AutoRetouchAPIClient:
             self,
             organization_id: Optional[Union[str, UUID]] = None,
             api_config: ApiConfig = DEFAULT_API_CONFIG,
-            credentials_path: Optional[str] = None,
-            refresh_token: Optional[str] = None,
+            credentials_path: Optional[str] = AR_CREDENTIALS,
+            refresh_token: Optional[str] = AR_REFRESH_TOKEN,
             user_agent: str = DEFAULT_USER_AGENT,
             save_credentials: bool = True,
     ):
@@ -140,6 +147,10 @@ class AutoRetouchAPIClient:
 
     def login(self):
         self.auth.authenticate()
+        return self
+
+    def logout(self):
+        self.auth.revoke_refresh_token()
         return self
 
     # ****** API ******
