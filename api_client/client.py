@@ -97,7 +97,7 @@ class AutoRetouchAPIClient:
             "Content-Type": "application/x-www-form-urlencoded",
         }
         response = requests.post(url=url, headers=headers, data=payload)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return DeviceCodeResponse.from_dict(response.json())
 
     def get_credentials_from_device_code(self, device_code: str) -> Credentials:
@@ -112,7 +112,7 @@ class AutoRetouchAPIClient:
             "Content-Type": "application/x-www-form-urlencoded",
         }
         response = requests.post(url=url, headers=headers, data=payload)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return Credentials(**response.json())
 
     def get_credentials_from_refresh_token(self, refresh_token: str) -> Credentials:
@@ -127,7 +127,7 @@ class AutoRetouchAPIClient:
             "Content-Type": "application/x-www-form-urlencoded",
         }
         response = requests.post(url=url, headers=headers, data=payload)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return Credentials(refresh_token=refresh_token, **response.json())
 
     def revoke_refresh_token(self, refresh_token: str) -> int:
@@ -135,7 +135,7 @@ class AutoRetouchAPIClient:
         payload = {"client_id": self.api_config.CLIENT_ID, "token": refresh_token}
         headers = {"User-Agent": self.user_agent, "Content-Type": "application/json"}
         response = requests.post(url=url, headers=headers, data=json.dumps(payload))
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return response.status_code
 
     def login(self):
@@ -149,10 +149,18 @@ class AutoRetouchAPIClient:
         url = f"{self.api_config.BASE_API_URL_CURRENT}/organization?limit=50&offset=0"
         headers = {**self.base_headers, "Content-Type": "application/json"}
         response = requests.get(url=url, headers=headers)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         page = Page(**response.json())
         organizations = [Organization.from_dict(entry) for entry in page.entries]
         return organizations
+
+    @authenticated
+    def get_organization(self, organization_id) -> Organization:
+        url = f"{self.api_config.BASE_API_URL_CURRENT}/organization/{organization_id}"
+        headers = {**self.base_headers, "Content-Type": "application/json"}
+        response = requests.get(url=url, headers=headers)
+        response.raise_for_status()
+        return Organization.from_dict(response.json())
 
     @authenticated
     def get_workflows(self, organization_id: Optional[UUID] = None) -> List[Workflow]:
@@ -160,7 +168,7 @@ class AutoRetouchAPIClient:
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow?limit=50&offset=0&organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
         response = requests.get(url=url, headers=headers)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         page = Page(**response.json())
         workflows = [Workflow.from_dict(entry) for entry in page.entries]
         return workflows
@@ -172,7 +180,7 @@ class AutoRetouchAPIClient:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution?workflow={workflow_id}&limit=50&offset=0&organization={organization_id}"
         response = requests.get(url=url, headers=self.base_headers)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         page = Page(**response.json())
         page.entries = [WorkflowExecution.from_dict(entry) for entry in page.entries]
         return page
@@ -188,7 +196,7 @@ class AutoRetouchAPIClient:
             mimetype, _ = mimetypes.guess_type(file.name)
             files = [("file", (filename, file, mimetype))]
             response = requests.post(url=url, headers=self.base_headers, files=files)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return response.content.decode(response.encoding)
 
     @authenticated
@@ -206,7 +214,7 @@ class AutoRetouchAPIClient:
         with BytesIO(image_content) as file:
             files = [("file", (image_name, file, mimetype))]
             response = requests.post(url=url, headers=self.base_headers, files=files)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return response.content.decode(response.encoding)
 
     @authenticated
@@ -236,7 +244,7 @@ class AutoRetouchAPIClient:
             mimetype, _ = mimetypes.guess_type(file.name)
             files = [("file", (filename, file, mimetype))]
             response = requests.post(url=url, headers=self.base_headers, files=files)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return UUID(response.content.decode(response.encoding))
 
     @authenticated
@@ -269,7 +277,7 @@ class AutoRetouchAPIClient:
         }
 
         response = requests.post(url=url, headers=headers, data=json.dumps(payload))
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return UUID(response.content.decode(response.encoding))
 
     @authenticated
@@ -280,7 +288,7 @@ class AutoRetouchAPIClient:
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}?organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
         response = requests.get(url=url, headers=headers)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return WorkflowExecution.from_dict(response.json())
 
     @authenticated
@@ -291,7 +299,7 @@ class AutoRetouchAPIClient:
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/status?organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "text/event-stream"}
         response = requests.get(url=url, headers=headers)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         # TODO: decode event stream format
         return response.content.decode(response.encoding)
 
@@ -305,7 +313,7 @@ class AutoRetouchAPIClient:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/image/{image_content_hash}/{image_name}?organization={organization_id}"
         response = requests.get(url=url, headers=self.base_headers)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return response.content
 
     @authenticated
@@ -315,7 +323,7 @@ class AutoRetouchAPIClient:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/result/default?organization={organization_id}"
         response = requests.get(url=url, headers=self.base_headers)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return response.content
 
     @authenticated
@@ -326,7 +334,7 @@ class AutoRetouchAPIClient:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}{result_path}?organization={organization_id}"
         response = requests.get(url=url, headers=self.base_headers)
-        self.__assert_response_ok(response)
+        response.raise_for_status()
         return response.content
 
     @authenticated
@@ -354,7 +362,7 @@ class AutoRetouchAPIClient:
             "expectedImages": expected_images_content_hashes,
         }
         response = requests.post(url=url, headers=headers, data=json.dumps(payload))
-        self.__assert_response_ok(response)
+        response.raise_for_status()
 
     # ****** HIGH-LEVEL METHODS ******
 
@@ -404,13 +412,6 @@ class AutoRetouchAPIClient:
                 print(f"Execution failed for {path}")
 
     # ****** HELPERS ******
-
-    @staticmethod
-    def __assert_response_ok(response):
-        if response.status_code != 200 and response.status_code != 201:
-            raise RuntimeError(
-                f"API responded with Status Code {response.status_code}, reason: {response.reason}"
-            )
 
     def _get_organization_id(self, passed_in_value):
         value = self.organization_id or passed_in_value
