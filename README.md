@@ -88,3 +88,19 @@ After that, it automatically falls back to this path and authenticates itself wi
 for finer interactions with the API, the client exposes methods corresponding to endpoints.
 
 TODO : table with `method name & signature | api docs link`
+
+# Autoretouch CLI
+```
+autoretouch login/auth
+autoretouch logout
+autoretouch config
+  get/set/list
+autoretouch execute/process
+```
+
+```
+export AUTORETOUCH_ORGANIZATION=""
+export AUTORETOUCH_REFRESH_TOKEN=""
+export AUTORETOUCH_CREDENTIAL_PATH=""
+autoretouch balance
+```
