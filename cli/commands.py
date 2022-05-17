@@ -1,7 +1,6 @@
 import json
 import click
 from uuid import UUID
-from pprint import pprint
 from api_client.client import AutoRetouchAPIClient, USER_CONFIG, USER_CONFIG_PATH
 
 
