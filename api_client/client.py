@@ -30,6 +30,13 @@ DEFAULT_API_CONFIG = ApiConfig(
     AUDIENCE="https://api.autoretouch.com",
     AUTH_DOMAIN="https://auth.autoretouch.com",
 )
+AR_CREDENTIALS = os.environ.get(
+    "AUTORETOUCH_CREDENTIALS_PATH",
+    os.path.join(os.path.expanduser("~"), ".config", "autoretouch-credentials.json")
+)
+AR_REFRESH_TOKEN = os.environ.get(
+    "AUTORETOUCH_REFRESH_TOKEN", None
+)
 DEFAULT_USER_AGENT = "Autoretouch-Python-Api-Client-0.0.1"
 
 T = TypeVar("T", bound=Callable)
@@ -65,8 +72,8 @@ class AutoRetouchAPIClient:
             self,
             organization_id: Optional[Union[str, UUID]] = None,
             api_config: ApiConfig = DEFAULT_API_CONFIG,
-            credentials_path: Optional[str] = None,
-            refresh_token: Optional[str] = None,
+            credentials_path: Optional[str] = AR_CREDENTIALS,
+            refresh_token: Optional[str] = AR_REFRESH_TOKEN,
             user_agent: str = DEFAULT_USER_AGENT,
             save_credentials: bool = True,
     ):
@@ -140,6 +147,10 @@ class AutoRetouchAPIClient:
 
     def login(self):
         self.auth.authenticate()
+        return self
+
+    def logout(self):
+        self.auth.revoke_refresh_token()
         return self
 
     # ****** API ******
@@ -338,6 +349,8 @@ class AutoRetouchAPIClient:
         headers = {**self.base_headers, "Content-Type": "application/json"}
         return requests.post(url=url, headers=headers, data={}).status_code
 
+    # ****** HIGH-LEVEL METHODS ******
+
     @authenticated
     def send_feedback(
             self,
@@ -355,8 +368,6 @@ class AutoRetouchAPIClient:
         }
         response = requests.post(url=url, headers=headers, data=json.dumps(payload))
         self.__assert_response_ok(response)
-
-    # ****** HIGH-LEVEL METHODS ******
 
     def process_image(
             self, image_path: str, workflow_id: UUID, output_dir: str
@@ -378,6 +389,8 @@ class AutoRetouchAPIClient:
         with open(os.path.join(output_dir, os.path.split(image_path)[-1]), "wb") as f:
             f.write(result)
         return True
+
+    # ****** HELPERS ******
 
     def process_batch(self, workflow_id: Union[str, UUID], image_dir: str, target_dir: str):
         """apply a workflow to a directory of images and download the results to `target_dir`"""
@@ -402,8 +415,6 @@ class AutoRetouchAPIClient:
                 print(f"Processed {path} successfully")
             else:
                 print(f"Execution failed for {path}")
-
-    # ****** HELPERS ******
 
     @staticmethod
     def __assert_response_ok(response):

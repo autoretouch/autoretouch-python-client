@@ -8,9 +8,9 @@ import logging
 
 from api_client.model import Credentials, DeviceCodeResponse
 
-__all__ = ["Authenticator"]
-
-AR_API_CREDENTIALS = os.path.join(os.path.expanduser("~"), ".config", "autoretouch-credentials.json")
+__all__ = [
+    "Authenticator"
+]
 
 
 def _open_browser_for_verification(device_code_response: DeviceCodeResponse):
@@ -56,15 +56,11 @@ class Authenticator:
         self.credentials: Optional[Credentials] = None
 
     def authenticate(self):
-        if self.credentials_path is not None and os.path.isfile(self.credentials_path):
-            self.credentials = self._read_credentials_file()
-            self.refresh_credentials()
-        elif self.refresh_token is not None:
+        if self.refresh_token is not None:
             self.credentials = self.api.get_credentials_from_refresh_token(
                 self.refresh_token
             )
-        elif os.path.isfile(AR_API_CREDENTIALS):
-            self.credentials_path = AR_API_CREDENTIALS
+        elif self.credentials_path is not None and os.path.isfile(self.credentials_path):
             self.credentials = self._read_credentials_file()
             self.refresh_credentials()
         else:
@@ -75,8 +71,9 @@ class Authenticator:
             )
         if self.save_credentials:
             if not self.credentials_path:
-                self.credentials_path = AR_API_CREDENTIALS
+                self.credentials_path = AR_CREDENTIALS
             self._save_credentials()
+        logging.info("Login was successful")
         return self
 
     @property
