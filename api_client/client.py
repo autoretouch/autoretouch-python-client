@@ -30,12 +30,25 @@ DEFAULT_API_CONFIG = ApiConfig(
     AUDIENCE="https://api.autoretouch.com",
     AUTH_DOMAIN="https://auth.autoretouch.com",
 )
+CONFIG_ROOT = os.path.join(os.path.expanduser("~"), ".config")
 AR_CREDENTIALS = os.environ.get(
     "AUTORETOUCH_CREDENTIALS_PATH",
-    os.path.join(os.path.expanduser("~"), ".config", "autoretouch-credentials.json")
+    os.path.join(CONFIG_ROOT, "autoretouch-credentials.json")
 )
 AR_REFRESH_TOKEN = os.environ.get(
     "AUTORETOUCH_REFRESH_TOKEN", None
+)
+USER_CONFIG_PATH = os.path.join(CONFIG_ROOT, "autoretouch-config.json")
+if os.path.isfile(USER_CONFIG_PATH):
+    USER_CONFIG = json.load(open(USER_CONFIG_PATH, "r"))
+else:
+    USER_CONFIG = {
+        "organization": {"id": None, "name": None},
+        "workflow": {"name": None, "id": None}
+    }
+DEFAULT_ORG_ID = os.environ.get(
+    "AUTORETOUCH_ORGANIZATION_ID",
+    USER_CONFIG["organization"]["id"]
 )
 DEFAULT_USER_AGENT = "Autoretouch-Python-Api-Client-0.0.1"
 
@@ -70,7 +83,7 @@ class AutoRetouchAPIClient:
     """
     def __init__(
             self,
-            organization_id: Optional[Union[str, UUID]] = None,
+            organization_id: Optional[Union[str, UUID]] = DEFAULT_ORG_ID,
             api_config: ApiConfig = DEFAULT_API_CONFIG,
             credentials_path: Optional[str] = AR_CREDENTIALS,
             refresh_token: Optional[str] = AR_REFRESH_TOKEN,
@@ -187,6 +200,14 @@ class AutoRetouchAPIClient:
         page = Page(**response.json())
         workflows = [Workflow.from_dict(entry) for entry in page.entries]
         return workflows
+
+    @authenticated
+    def get_workflow(self, workflow_id: UUID, organization_id: Optional[UUID] = None, ) -> Workflow:
+        organization_id = self._get_organization_id(organization_id)
+        url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/{workflow_id}?organization={organization_id}"
+        response = requests.get(url, headers=self.base_headers)
+        response.raise_for_status()
+        return Workflow.from_dict(response.json())
 
     @authenticated
     def get_workflow_executions(
