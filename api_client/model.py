@@ -1,3 +1,4 @@
+import dataclasses
 from datetime import datetime
 from typing import List, Dict, Optional, Union
 from uuid import UUID
@@ -12,6 +13,9 @@ class BaseModel:
         """method to instantiate a dataclass without TypeError on extra arguments"""
         params = inspect.signature(cls).parameters
         return cls(**{k: v for k, v in dct.items() if k in params})
+
+    def to_dict(self) -> Dict:
+        return dataclasses.asdict(self)
 
     @staticmethod
     def to_uuid(value):

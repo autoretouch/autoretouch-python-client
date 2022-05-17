@@ -7,3 +7,4 @@ venv/
 
 access_token.txt
 credentials.json
+api_client.egg-info/
