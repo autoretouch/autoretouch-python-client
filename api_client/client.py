@@ -150,6 +150,10 @@ class AutoRetouchAPIClient:
         return self
 
     def logout(self):
+        self.auth.logout()
+        return self
+
+    def revoke(self):
         self.auth.revoke_refresh_token()
         return self
 

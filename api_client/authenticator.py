@@ -113,3 +113,10 @@ class Authenticator:
                 default=lambda o: o.__dict__,
                 indent=4,
             )
+
+    def logout(self):
+        if os.path.isfile(self.credentials_path):
+            os.remove(self.credentials_path)
+        self.credentials = None
+        self.refresh_token = None
+        return self

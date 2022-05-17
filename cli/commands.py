@@ -34,9 +34,10 @@ def login():
 @click.command()
 def logout():
     """
-    revoke the refresh token currently in use
+    revoke and remove stored refresh token from disk
     """
-    AutoRetouchAPIClient().logout()
+    AutoRetouchAPIClient().revoke().logout()
+
 
 
 @click.command()
@@ -55,7 +56,7 @@ def organizations(format):
 @click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False), help='output format: text/json')
 @click.argument('organization_id')
 def organization(format, organization_id):
-    """list all your organizations"""
+    """show details of given organization"""
     org = AutoRetouchAPIClient().get_organization(organization_id)
     if format == 'text':
         click.echo(f"{org.name}: {org.id}")
