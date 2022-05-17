@@ -4,10 +4,10 @@ from unittest import TestCase
 from uuid import UUID
 from assertpy import assert_that
 
-from autoretouch_api_client.client import (
+from api_client.client import (
     AutoRetouchAPIClient,
 )
-from autoretouch_api_client.model import Organization, Workflow, WorkflowExecution
+from api_client.model import Organization, Workflow, WorkflowExecution
 from test.api_config_dev import CONFIG_DEV
 
 CREDENTIALS_PATH = "../tmp/credentials.json"
@@ -20,9 +20,6 @@ class HealthApiIntegrationTest(TestCase):
 
     def test_health(self):
         assert_that(self.client.get_api_status()).is_equal_to(200)
-
-    def test_health_versioned(self):
-        assert_that(self.client.get_api_status_current()).is_equal_to(200)
 
 
 class APIClientIntegrationTest(TestCase):

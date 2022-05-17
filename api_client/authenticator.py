@@ -4,30 +4,32 @@ import time
 import webbrowser
 from datetime import datetime
 from typing import Optional
+import logging
 
-from autoretouch_api_client.model import Credentials, DeviceCodeResponse
+from api_client.model import Credentials, DeviceCodeResponse
 
 __all__ = ["Authenticator"]
 
 AR_API_CREDENTIALS = os.path.join(os.path.expanduser("~"), ".config", "autoretouch-credentials.json")
 
+
 def _open_browser_for_verification(device_code_response: DeviceCodeResponse):
-    print(
+    logging.info(
         f"Open verification url {device_code_response.verification_uri_complete} in the browser "
         f"and confirm the user code '{device_code_response.user_code}'."
     )
     try:
         webbrowser.open(device_code_response.verification_uri_complete)
     except Exception as e:
-        print("Failed to open the browser. Exception was :")
-        print(str(e))
+        logging.error("Failed to open the browser. Exception was :")
+        logging.error(str(e))
 
 
 def _poll_credentials_while_user_confirm(
     api: "AutoRetouchAPIClient", device_code_response: DeviceCodeResponse
 ) -> Credentials:
     seconds_waited = 0
-    print("Waiting for user confirmation...")
+    logging.info("Waiting for user confirmation...")
     while seconds_waited < device_code_response.expires_in:
         try:
             return api.get_credentials_from_device_code(
@@ -42,16 +44,16 @@ def _poll_credentials_while_user_confirm(
 class Authenticator:
     def __init__(
         self,
-        api: "AutoretouchClient",
+        api: "AutoRetouchAPIClient",
         credentials_path: Optional[str] = None,
         refresh_token: Optional[str] = None,
         save_credentials: bool = True,
     ):
-        self.api = api
-        self.credentials_path = credentials_path
-        self.refresh_token = refresh_token
-        self.save_credentials = save_credentials
-        self.credentials = None
+        self.api: "AutoRetouchAPIClient" = api
+        self.credentials_path: str = credentials_path
+        self.refresh_token: str = refresh_token
+        self.save_credentials: bool = save_credentials
+        self.credentials: Optional[Credentials] = None
 
     def authenticate(self):
         if self.credentials_path is not None and os.path.isfile(self.credentials_path):
@@ -97,7 +99,7 @@ class Authenticator:
 
     def _refresh_credentials_if_expired(self):
         if not self.credentials.access_token or self.token_expired:
-            print("access token expired, refreshing ...")
+            logging.info("access token expired, refreshing ...")
             self.refresh_credentials()
 
     def _read_credentials_file(self) -> Credentials:

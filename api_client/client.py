@@ -9,8 +9,8 @@ from typing import Dict, List, Optional, Callable, TypeVar, Union
 from functools import wraps
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from autoretouch_api_client.authenticator import Authenticator
-from autoretouch_api_client.model import (
+from api_client.authenticator import Authenticator
+from api_client.model import (
     ApiConfig,
     Organization,
     Page,
@@ -87,11 +87,6 @@ class AutoRetouchAPIClient:
     def get_api_status(self) -> int:
         return requests.get(f"{self.api_config.BASE_API_URL}/health").status_code
 
-    def get_api_status_current(self) -> int:
-        return requests.get(
-            f"{self.api_config.BASE_API_URL_CURRENT}/health"
-        ).status_code
-
     # ****** AUTH ENDPOINTS ******
 
     def get_device_code(self) -> DeviceCodeResponse:
@@ -142,6 +137,10 @@ class AutoRetouchAPIClient:
         response = requests.post(url=url, headers=headers, data=json.dumps(payload))
         self.__assert_response_ok(response)
         return response.status_code
+
+    def login(self):
+        self.auth.authenticate()
+        return self
 
     # ****** API ******
 

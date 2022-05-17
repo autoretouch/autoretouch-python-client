@@ -25,7 +25,7 @@ In most cases, you would like to process images according to some workflow withi
 To do so, you can simply
 
 ```python3
-from autoretouch_api_client.client import AutoRetouchAPIClient
+from api_client.client import AutoRetouchAPIClient
 
 organization_id = "e722e62e-5b2e-48e1-8638-25890e7279e3"
 

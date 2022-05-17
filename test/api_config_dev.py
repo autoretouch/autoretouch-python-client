@@ -1,4 +1,4 @@
-from autoretouch_api_client.model import ApiConfig
+from api_client.model import ApiConfig
 
 CONFIG_DEV = ApiConfig(
     BASE_API_URL="https://api.dev.autoretouch.com",
