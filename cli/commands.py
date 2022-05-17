@@ -109,6 +109,25 @@ def balance():
     click.echo(AutoRetouchAPIClient().get_balance())
 
 
+@click.command()
+@click.argument('input', type=click.Path(exists=True), required=True)
+@click.argument('output', type=click.Path(exists=True), required=True)
+@click.option('--workflow-id', required=False)
+def process(input, output, workflow_id):
+    """process a given image and wait for the result"""
+    client = AutoRetouchAPIClient()
+    client.process_image(input, output, workflow_id=workflow_id)
+    click.echo("done")
+
+
+@click.command()
+def workflows():
+    client = AutoRetouchAPIClient()
+    workflows = client.get_workflows()
+    for workflow in workflows:
+        click.echo(f"{workflow.name}: {workflow.id}")
+
+
 autoretouch_cli.add_command(login)
 autoretouch_cli.add_command(logout)
 autoretouch_cli.add_command(organizations)
@@ -117,3 +136,5 @@ autoretouch_cli.add_command(show_config)
 autoretouch_cli.add_command(use)
 autoretouch_cli.add_command(upload)
 autoretouch_cli.add_command(balance)
+autoretouch_cli.add_command(process)
+autoretouch_cli.add_command(workflows)

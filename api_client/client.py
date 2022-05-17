@@ -51,7 +51,11 @@ DEFAULT_ORG_ID = os.environ.get(
     "AUTORETOUCH_ORGANIZATION_ID",
     USER_CONFIG["organization"]["id"]
 )
-DEFAULT_USER_AGENT = "Autoretouch-Python-Api-Client-0.0.1"
+DEFAULT_WORKFLOW_ID = os.environ.get(
+    "AUTORETOUCH_WORKFLOW_ID",
+    USER_CONFIG["workflow"]["id"]
+)
+DEFAULT_USER_AGENT = "Autoretouch-Python-Api-Client-0.0.2"
 
 T = TypeVar("T", bound=Callable)
 
@@ -85,6 +89,7 @@ class AutoRetouchAPIClient:
     def __init__(
             self,
             organization_id: Optional[Union[str, UUID]] = DEFAULT_ORG_ID,
+            workflow_id: Optional[Union[str, UUID]] = DEFAULT_WORKFLOW_ID,
             api_config: ApiConfig = DEFAULT_API_CONFIG,
             credentials_path: Optional[str] = AR_CREDENTIALS,
             refresh_token: Optional[str] = AR_REFRESH_TOKEN,
@@ -97,6 +102,7 @@ class AutoRetouchAPIClient:
             self, credentials_path, refresh_token, save_credentials
         )
         self.organization_id = organization_id
+        self.workflow_id = workflow_id
 
     @property
     def base_headers(self) -> dict:
@@ -424,11 +430,17 @@ class AutoRetouchAPIClient:
         response.raise_for_status()
 
     def process_image(
-            self, image_path: str, workflow_id: UUID, output_dir: str
-    ) -> bool:
+            self,
+            image_path: str,
+            output_dir: str,
+            workflow_id: Optional[UUID] = None,
+            organization_id: Optional[UUID] = None
+    ):
         """upload image, start workflow, download result to `output_dir`"""
+        organization_id = self._get_organization_id(organization_id)
+        workflow_id = self._get_workflow_id(workflow_id)
         execution_id = self.create_workflow_execution_for_image_file(
-            workflow_id, image_path
+            workflow_id, image_path, organization_id=organization_id
         )
         while True:
             execution = self.get_workflow_execution_details(execution_id)
@@ -437,12 +449,12 @@ class AutoRetouchAPIClient:
             else:
                 sleep(2.0)
         if execution.status == "FAILED":
-            return False
+            raise RuntimeWarning(f"execution failed on server")
+
         result = self.download_result(execution.resultPath)
         os.makedirs(output_dir, exist_ok=True)
         with open(os.path.join(output_dir, os.path.split(image_path)[-1]), "wb") as f:
             f.write(result)
-        return True
 
     # ****** HELPERS ******
 
@@ -464,14 +476,24 @@ class AutoRetouchAPIClient:
             futures_to_images[future] = path
         for future in as_completed(futures_to_images):
             path = futures_to_images[future]
-            success = future.result()
-            if success:
+            try:
+                future.result()
                 print(f"Processed {path} successfully")
-            else:
+            except:
                 print(f"Execution failed for {path}")
 
     def _get_organization_id(self, passed_in_value):
         value = self.organization_id or passed_in_value
+        if value is None:
+            raise ValueError(
+                "Expected `organization_id` to not be None."
+                " Either set the client instance attribute "
+                "or passed it as kwarg when calling a client's method."
+            )
+        return value
+
+    def _get_workflow_id(self, passed_in_value):
+        value = self.workflow_id or passed_in_value
         if value is None:
             raise ValueError(
                 "Expected `organization_id` to not be None."
