@@ -1,15 +1,15 @@
 import json
 import click
 from uuid import UUID
-
-from api_client.client import AutoRetouchAPIClient
+from pprint import pprint
+from api_client.client import AutoRetouchAPIClient, USER_CONFIG, USER_CONFIG_PATH
 
 
 class UUIDEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, UUID):
             # if the obj is uuid, we simply return the value of uuid
-            return obj.hex
+            return str(obj)
         return json.JSONEncoder.default(self, obj)
 
 
@@ -38,6 +38,36 @@ def logout():
     """
     AutoRetouchAPIClient().revoke().logout()
 
+
+@click.command()
+def show_config():
+    """
+    print the name and id of your currently used organization
+    """
+    for key, value in USER_CONFIG.items():
+        click.echo(key)
+        for k, v in value.items():
+            click.echo(f"\t{k}: {v}")
+
+
+@click.command()
+@click.option("--organization-id", "-o", default=None)
+@click.option("--workflow-id", "-w", default=None)
+def use(organization_id, workflow_id):
+    client = AutoRetouchAPIClient()
+    if organization_id is not None:
+        org = client.get_organization(organization_id)
+        new_org = {"organization": {"name": org.name, "id": org.id}}
+    else:
+        new_org = {"organization": USER_CONFIG["organization"]}
+    if workflow_id is not None:
+        wf = client.get_workflow(workflow_id)
+        new_wf = {"workflow": {"name": wf.name, "id": wf.id}}
+    else:
+        new_wf = {"workflow": USER_CONFIG["workflow"]}
+    new_config = {**new_org, **new_wf}
+    with open(USER_CONFIG_PATH, "w") as f:
+        f.write(json.dumps(new_config, cls=UUIDEncoder))
 
 
 @click.command()
@@ -83,5 +113,7 @@ autoretouch_cli.add_command(login)
 autoretouch_cli.add_command(logout)
 autoretouch_cli.add_command(organizations)
 autoretouch_cli.add_command(organization)
+autoretouch_cli.add_command(show_config)
+autoretouch_cli.add_command(use)
 autoretouch_cli.add_command(upload)
 autoretouch_cli.add_command(balance)
