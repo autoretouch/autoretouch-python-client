@@ -362,6 +362,17 @@ class AutoRetouchAPIClient:
         return requests.post(url=url, headers=headers, data={}).status_code
 
     @authenticated
+    def get_balance(self, organization_id: Optional[UUID] = None) -> int:
+        organization_id = self._get_organization_id(organization_id)
+        url = f"{self.api_config.BASE_API_URL_CURRENT}/organization/balance?organization={organization_id}"
+        headers = {**self.base_headers, "Content-Type": "application/json"}
+        response = requests.get(url=url, headers=headers)
+        response.raise_for_status()
+        return response.content
+
+    # ****** HIGH-LEVEL METHODS ******
+
+    @authenticated
     def send_feedback(
             self,
             workflow_execution_id: UUID,
@@ -378,8 +389,6 @@ class AutoRetouchAPIClient:
         }
         response = requests.post(url=url, headers=headers, data=json.dumps(payload))
         response.raise_for_status()
-
-    # ****** HIGH-LEVEL METHODS ******
 
     def process_image(
             self, image_path: str, workflow_id: UUID, output_dir: str
@@ -401,6 +410,8 @@ class AutoRetouchAPIClient:
         with open(os.path.join(output_dir, os.path.split(image_path)[-1]), "wb") as f:
             f.write(result)
         return True
+
+    # ****** HELPERS ******
 
     def process_batch(self, workflow_id: Union[str, UUID], image_dir: str, target_dir: str):
         """apply a workflow to a directory of images and download the results to `target_dir`"""
@@ -425,8 +436,6 @@ class AutoRetouchAPIClient:
                 print(f"Processed {path} successfully")
             else:
                 print(f"Execution failed for {path}")
-
-    # ****** HELPERS ******
 
     def _get_organization_id(self, passed_in_value):
         value = self.organization_id or passed_in_value

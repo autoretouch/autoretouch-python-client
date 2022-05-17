@@ -64,7 +64,24 @@ def organization(format, organization_id):
         click.echo(json.dumps(org, indent=4))
 
 
+@click.command()
+@click.argument('filename', type=click.Path(exists=True))
+def upload(filename):
+    """upload an image from disk"""
+    image_path = click.format_filename(filename)
+    result_path = AutoRetouchAPIClient().upload_image(image_path=image_path)
+    click.echo(result_path)
+
+
+@click.command()
+def balance():
+    """show your current balance"""
+    click.echo(AutoRetouchAPIClient().get_balance())
+
+
 autoretouch_cli.add_command(login)
 autoretouch_cli.add_command(logout)
 autoretouch_cli.add_command(organizations)
 autoretouch_cli.add_command(organization)
+autoretouch_cli.add_command(upload)
+autoretouch_cli.add_command(balance)
