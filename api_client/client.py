@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import mimetypes
@@ -211,6 +212,17 @@ class AutoRetouchAPIClient:
             mimetype, _ = mimetypes.guess_type(file.name)
             files = [("file", (filename, file, mimetype))]
             response = requests.post(url=url, headers=self.base_headers, files=files)
+        response.raise_for_status()
+        return response.content.decode(response.encoding)
+
+    @authenticated
+    def upload_image_from_stream(self, open_file: io.BufferedReader, organization_id: Optional[UUID] = None) -> str:
+        organization_id = self._get_organization_id(organization_id)
+        url = f"{self.api_config.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
+        filename = os.path.basename(open_file.name) or "image"
+        mimetype, _ = mimetypes.guess_type(open_file.name)
+        files = [("file", (filename, open_file, mimetype))]
+        response = requests.post(url=url, headers=self.base_headers, files=files)
         response.raise_for_status()
         return response.content.decode(response.encoding)
 

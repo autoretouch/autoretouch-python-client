@@ -65,12 +65,12 @@ def organization(format, organization_id):
 
 
 @click.command()
-@click.argument('filename', type=click.Path(exists=True))
-def upload(filename):
+@click.argument('files', type=click.File('rb'), nargs=-1)
+def upload(files):
     """upload an image from disk"""
-    image_path = click.format_filename(filename)
-    result_path = AutoRetouchAPIClient().upload_image(image_path=image_path)
-    click.echo(result_path)
+    client = AutoRetouchAPIClient()
+    for file in files:
+        click.echo(f"{file.name} is uploaded as {client.upload_image_from_stream(file)}")
 
 
 @click.command()
