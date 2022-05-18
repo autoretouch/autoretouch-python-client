@@ -102,7 +102,7 @@ def upload(files):
         click.echo(f"{file.name} is uploaded as {client.upload_image_from_stream(file)}")
 
 
-@click.command()
+@click.command("usebalance")
 def balance():
     """show your current balance"""
     click.echo(AutoRetouchAPIClient().get_balance())

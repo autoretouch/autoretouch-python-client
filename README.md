@@ -87,9 +87,15 @@ After that, it automatically falls back to this path and authenticates itself wi
 
 for finer interactions with the API, the client exposes methods corresponding to endpoints.
 
-TODO : table with `method name & signature | api docs link`
+TODO: table with `method name & signature | api docs link`
 
 # Autoretouch CLI
+
+Install CLI for development:
+```
+pip install -e .
+```
+
 ```
 autoretouch login/auth
 autoretouch logout

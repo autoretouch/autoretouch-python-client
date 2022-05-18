@@ -4,6 +4,7 @@ venv
 .idea/
 .vscode/
 venv/
+build/
 
 access_token.txt
 credentials.json
