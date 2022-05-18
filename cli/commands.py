@@ -49,9 +49,17 @@ def show_config():
             click.echo(f"\t{k}: {v}")
 
 
+def autocomplete_user_organizations(ctx, param, incomplete):
+    return [str(k.id) for k in AutoRetouchAPIClient().get_organizations() if k.name.startswith(incomplete)]
+
+
+def autocomplete_user_workflows(ctx, param, incomplete):
+    return [str(k.id) for k in AutoRetouchAPIClient().get_workflows() if k.name.startswith(incomplete)]
+
+
 @click.command()
-@click.option("--organization-id", "-o", default=None)
-@click.option("--workflow-id", "-w", default=None)
+@click.option("--organization-id", "-o", default=None, shell_complete=autocomplete_user_organizations)
+@click.option("--workflow-id", "-w", default=None, shell_complete=autocomplete_user_workflows)
 def use(organization_id, workflow_id):
     client = AutoRetouchAPIClient()
     if organization_id is not None:
@@ -83,7 +91,7 @@ def organizations(format):
 
 @click.command()
 @click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False), help='output format: text/json')
-@click.argument('organization_id')
+@click.argument('organization_id', shell_complete=autocomplete_user_organizations)
 def organization(format, organization_id):
     """show details of given organization"""
     org = AutoRetouchAPIClient().get_organization(organization_id)
@@ -111,7 +119,7 @@ def balance():
 @click.command()
 @click.argument('input', type=click.Path(exists=True), required=True)
 @click.argument('output', type=click.Path(exists=True), required=True)
-@click.option('--workflow-id', required=False)
+@click.option('--workflow-id', required=False, shell_complete=autocomplete_user_workflows)
 def process(input, output, workflow_id):
     """process a given image and wait for the result"""
     client = AutoRetouchAPIClient()
