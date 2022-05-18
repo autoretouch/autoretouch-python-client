@@ -1,1 +1,0 @@
-logger = logging.getLogger("CUSTOM_LOGGER")
