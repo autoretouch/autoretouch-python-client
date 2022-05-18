@@ -1,4 +1,5 @@
-import subprocess
+import os
+from subprocess import run
 
 from setuptools import setup, find_packages
 from setuptools.command.install import install
@@ -8,7 +9,11 @@ class PostInstallCommand(install):
     """Post-installation for installation mode."""
     def run(self):
         install.run(self)
-        # PUT YOUR POST-INSTALL SCRIPT HERE or CALL A FUNCTION - TODO
+        config_root = os.path.join(os.path.expanduser("~"), ".config", "autoretouch")
+        os.makedirs(config_root, exist_ok=True)
+        run(f"cp .autoretouch-complete.zsh {config_root}/".split())
+        os.system(f"echo \"\n . {config_root}/.autoretouch-complete.zsh\" >> ~/.zshrc")
+
 
 
 setup(
