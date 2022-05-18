@@ -1,5 +1,4 @@
 import time
-import unittest
 from unittest import TestCase, skip
 from assertpy import assert_that
 import os
@@ -17,7 +16,7 @@ class TestAuthenticator(TestCase):
     refresh_token = ""
     credentials_path = "../tmp/test-credentials.json"
 
-    # @unittest.skip("For manual local testing only")
+    # @skip("For manual local testing only")
     def test_login(self):
         client = AutoRetouchAPIClient(
             organization_id=self.test_org_id,

@@ -5,6 +5,7 @@ import mimetypes
 from io import BytesIO
 from time import sleep
 from uuid import UUID
+
 import requests
 from typing import Dict, List, Optional, Callable, TypeVar, Union
 from functools import wraps
@@ -169,10 +170,12 @@ class AutoRetouchAPIClient:
         self.auth.authenticate()
         return self
 
+    @authenticated
     def logout(self):
         self.auth.logout()
         return self
 
+    @authenticated
     def revoke(self):
         self.auth.revoke_refresh_token()
         return self

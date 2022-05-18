@@ -71,7 +71,7 @@ class Authenticator:
             )
         if self.save_credentials:
             if not self.credentials_path:
-                self.credentials_path = AR_CREDENTIALS
+                logging.warning("Can not save credentials, no credentials path given")
             self._save_credentials()
         logging.info("Login was successful")
         return self
