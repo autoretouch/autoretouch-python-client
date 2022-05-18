@@ -456,22 +456,32 @@ class AutoRetouchAPIClient:
         with open(os.path.join(output_dir, os.path.split(image_path)[-1]), "wb") as f:
             f.write(result)
 
-    # ****** HELPERS ******
-
-    def process_batch(self, workflow_id: Union[str, UUID], image_dir: str, target_dir: str):
-        """apply a workflow to a directory of images and download the results to `target_dir`"""
-        image_paths = [
+    @staticmethod
+    def get_processable_image_files(image_dir: str) -> List[str]:
+        return [
             *filter(
-                lambda f: os.path.splitext(f)[-1] in {".jpeg", ".jpg", ".png"},
+                lambda f: os.path.splitext(f)[-1] in {".jpeg", ".jpg", ".png", ".tif", ".tiff"},
                 os.listdir(image_dir),
             )
         ]
+
+    def process_folder(
+            self,
+            image_dir: str,
+            target_dir: str,
+            workflow_id: Optional[UUID] = None,
+            organization_id: Optional[UUID] = None
+    ):
+        """apply a workflow to a directory of images and download the results to `target_dir`"""
+        organization_id = self._get_organization_id(organization_id)
+        workflow_id = self._get_workflow_id(workflow_id)
+        image_paths = self.get_processable_image_files(image_dir)
         executor = ThreadPoolExecutor(max_workers=min(200, len(image_paths)))
         futures_to_images = {}
         for path in image_paths:
             path = os.path.join(image_dir, path)
             future = executor.submit(
-                self.process_image, self, path, workflow_id, target_dir
+                self.process_image, path, target_dir, workflow_id, organization_id
             )
             futures_to_images[future] = path
         for future in as_completed(futures_to_images):
@@ -479,8 +489,10 @@ class AutoRetouchAPIClient:
             try:
                 future.result()
                 print(f"Processed {path} successfully")
-            except:
-                print(f"Execution failed for {path}")
+            except Exception as e:
+                print(f"Execution failed for {path}: {e}")
+
+    # ****** HELPERS ******
 
     def _get_organization_id(self, passed_in_value):
         value = self.organization_id or passed_in_value
@@ -496,7 +508,7 @@ class AutoRetouchAPIClient:
         value = self.workflow_id or passed_in_value
         if value is None:
             raise ValueError(
-                "Expected `organization_id` to not be None."
+                "Expected `workflow_id` to not be None."
                 " Either set the client instance attribute "
                 "or passed it as kwarg when calling a client's method."
             )
