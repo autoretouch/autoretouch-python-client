@@ -122,8 +122,9 @@ def balance():
 @click.command()
 @click.argument('input', type=click.Path(exists=True), required=True)
 @click.argument('output', type=click.Path(exists=True), required=True)
-@click.option('--workflow-id', required=False, shell_complete=autocomplete_user_workflows)
-def process(input: str, output: str, workflow_id: Optional[UUID]):
+@click.option('--workflow-id', '-w', required=False, shell_complete=autocomplete_user_workflows)
+@click.option('--yes', '-y', required=False, is_flag=True, help="skip confirmation")
+def process(input: str, output: str, workflow_id: Optional[UUID], yes: bool = False):
     """process an image or a folder of images and wait for the result
 
     INPUT: path of image file or folder of image files.
@@ -134,7 +135,9 @@ def process(input: str, output: str, workflow_id: Optional[UUID]):
         client.process_image(input, output, workflow_id=workflow_id)
     else:
         images = client.get_processable_image_files(input)
-        click.confirm(f"Are you sure you want to process {len(images)} images?", abort=True)
+        if not yes:
+            click.confirm(f"Are you sure you want to process {len(images)} images?", abort=True)
+        click.echo(f"Uploading and processing {len(images)} images ...")
         client.process_folder(input, output, workflow_id=workflow_id)
     click.echo("done")
 
