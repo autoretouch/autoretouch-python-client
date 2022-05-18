@@ -12,12 +12,15 @@ class PostInstallCommand(install):
         config_root = os.path.join(os.path.expanduser("~"), ".config", "autoretouch")
         os.makedirs(config_root, exist_ok=True)
         run(f"cp .autoretouch-complete.zsh {config_root}/".split())
-        os.system(f"echo \"\n . {config_root}/.autoretouch-complete.zsh\" >> ~/.zshrc")
-
+        os.system(f"echo \""
+                  f"\n\n# autoretouch auto-completion"
+                  f"\n. ~/.config/autoretouch/.autoretouch-complete.zsh\n\n"
+                  f"\" >> ~/.zshrc "
+                  f"&& . ~/.zshrc")
 
 
 setup(
-    name='api_client',
+    name='autoretouch_cli',
     version='2.0.0',
     packages=find_packages(exclude=['tests', 'assets', 'tmp']),
     install_requires=[
