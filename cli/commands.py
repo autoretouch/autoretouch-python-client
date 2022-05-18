@@ -1,10 +1,18 @@
 import json
 import os
-from typing import Optional
-
 import click
+import click_log
+import logging
+
+from typing import Optional
 from uuid import UUID
+
 from api_client.client import AutoRetouchAPIClient, USER_CONFIG, USER_CONFIG_PATH
+
+logger = logging.getLogger("autoretouch-python-client")
+logger.setLevel("INFO")
+click_log.basic_config(logger)
+click_log.ColorFormatter.colors["info"] = dict(fg="green")
 
 
 class UUIDEncoder(json.JSONEncoder):
@@ -21,6 +29,7 @@ def autoretouch_cli():
 
 
 @click.command()
+@click_log.simple_verbosity_option(logger)
 def login():
     """
     create/fetch credentials from the environment variables
@@ -34,6 +43,7 @@ def login():
 
 
 @click.command()
+@click_log.simple_verbosity_option(logger)
 def logout():
     """
     revoke and remove stored refresh token from disk
@@ -42,6 +52,7 @@ def logout():
 
 
 @click.command()
+@click_log.simple_verbosity_option(logger)
 def show_config():
     """
     print the name and id of your currently used organization
@@ -63,6 +74,7 @@ def autocomplete_user_workflows(ctx, param, incomplete):
 @click.command()
 @click.option("--organization-id", "-o", default=None, shell_complete=autocomplete_user_organizations)
 @click.option("--workflow-id", "-w", default=None, shell_complete=autocomplete_user_workflows)
+@click_log.simple_verbosity_option(logger)
 def use(organization_id, workflow_id):
     client = AutoRetouchAPIClient()
     if organization_id is not None:
@@ -81,7 +93,8 @@ def use(organization_id, workflow_id):
 
 
 @click.command()
-@click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False), help='output format: text/json')
+@click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False), help='Output format: text/json')
+@click_log.simple_verbosity_option(logger)
 def organizations(format):
     """list all your organizations"""
     orgs = AutoRetouchAPIClient().get_organizations()
@@ -93,8 +106,9 @@ def organizations(format):
 
 
 @click.command()
-@click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False), help='output format: text/json')
+@click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False), help='Output format: text/json')
 @click.argument('organization_id', shell_complete=autocomplete_user_organizations)
+@click_log.simple_verbosity_option(logger)
 def organization(format, organization_id):
     """show details of given organization"""
     org = AutoRetouchAPIClient().get_organization(organization_id)
@@ -106,6 +120,7 @@ def organization(format, organization_id):
 
 @click.command()
 @click.argument('files', type=click.File('rb'), nargs=-1)
+@click_log.simple_verbosity_option(logger)
 def upload(files):
     """upload an image from disk"""
     client = AutoRetouchAPIClient()
@@ -114,6 +129,7 @@ def upload(files):
 
 
 @click.command("balance")
+@click_log.simple_verbosity_option(logger)
 def balance():
     """show your current balance"""
     click.echo(AutoRetouchAPIClient().get_balance())
@@ -123,7 +139,8 @@ def balance():
 @click.argument('input', type=click.Path(exists=True), required=True)
 @click.argument('output', type=click.Path(exists=True), required=True)
 @click.option('--workflow-id', '-w', required=False, shell_complete=autocomplete_user_workflows)
-@click.option('--yes', '-y', required=False, is_flag=True, help="skip confirmation")
+@click.option('--yes', '-y', required=False, is_flag=True, help="Skip confirmation")
+@click_log.simple_verbosity_option(logger)
 def process(input: str, output: str, workflow_id: Optional[UUID], yes: bool = False):
     """process an image or a folder of images and wait for the result
 
@@ -137,9 +154,9 @@ def process(input: str, output: str, workflow_id: Optional[UUID], yes: bool = Fa
         images = client.get_processable_image_files(input)
         if not yes:
             click.confirm(f"Are you sure you want to process {len(images)} images?", abort=True)
-        click.echo(f"Uploading and processing {len(images)} images ...")
+        logger.info(f"Uploading and processing {len(images)} images ...")
         client.process_folder(input, output, workflow_id=workflow_id)
-    click.echo("done")
+    logger.info("Done.")
 
 
 @click.command()

@@ -2,11 +2,12 @@ import json
 import os.path
 import time
 import webbrowser
+import logging
 from datetime import datetime
 from typing import Optional
-import logging
-
 from api_client.model import Credentials, DeviceCodeResponse
+
+logger = logging.getLogger("autoretouch-python-client")
 
 __all__ = [
     "Authenticator"
@@ -14,22 +15,22 @@ __all__ = [
 
 
 def _open_browser_for_verification(device_code_response: DeviceCodeResponse):
-    logging.info(
+    logger.info(
         f"Open verification url {device_code_response.verification_uri_complete} in the browser "
         f"and confirm the user code '{device_code_response.user_code}'."
     )
     try:
         webbrowser.open(device_code_response.verification_uri_complete)
     except Exception as e:
-        logging.error("Failed to open the browser. Exception was :")
-        logging.error(str(e))
+        logger.error("Failed to open the browser. Exception was :")
+        logger.error(str(e))
 
 
 def _poll_credentials_while_user_confirm(
     api: "AutoRetouchAPIClient", device_code_response: DeviceCodeResponse
 ) -> Credentials:
     seconds_waited = 0
-    logging.info("Waiting for user confirmation...")
+    logger.info("Waiting for user confirmation...")
     while seconds_waited < device_code_response.expires_in:
         try:
             return api.get_credentials_from_device_code(
@@ -69,11 +70,11 @@ class Authenticator:
             self.credentials = _poll_credentials_while_user_confirm(
                 self.api, device_code_response
             )
+            logger.info("Login was successful")
         if self.save_credentials:
             if not self.credentials_path:
-                logging.warning("Can not save credentials, no credentials path given")
+                logger.warning("Can not save credentials, no credentials path given")
             self._save_credentials()
-        logging.info("Login was successful")
         return self
 
     @property
@@ -96,7 +97,7 @@ class Authenticator:
 
     def _refresh_credentials_if_expired(self):
         if not self.credentials.access_token or self.token_expired:
-            logging.info("access token expired, refreshing ...")
+            logger.info("access token expired, refreshing ...")
             self.refresh_credentials()
 
     def _read_credentials_file(self) -> Credentials:

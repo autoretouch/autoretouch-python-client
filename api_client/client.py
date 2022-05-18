@@ -1,5 +1,6 @@
 import io
 import json
+import logging
 import os
 import mimetypes
 from io import BytesIO
@@ -21,6 +22,8 @@ from api_client.model import (
     WorkflowExecution,
     Credentials,
 )
+
+logger = logging.getLogger("autoretouch-python-client")
 
 __all__ = ["AutoRetouchAPIClient", "DEFAULT_API_CONFIG"]
 
@@ -296,6 +299,7 @@ class AutoRetouchAPIClient:
             f"&organization={organization_id}"
             f"{labels_encoded}"
         )
+        logger.info(f"Starting to process {image_path} with workflow {workflow_id}")
         with open(image_path, "rb") as file:
             filename = os.path.basename(file.name)
             mimetype, _ = mimetypes.guess_type(file.name)
@@ -491,9 +495,9 @@ class AutoRetouchAPIClient:
             path = futures_to_images[future]
             try:
                 future.result()
-                print(f"Processed {path} successfully")
+                logger.info(f"Processed {path} successfully")
             except Exception as e:
-                print(f"Execution failed for {path}: {e}")
+                logger.error(f"Execution failed for {path}: {e}")
 
     # ****** HELPERS ******
 
