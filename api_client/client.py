@@ -23,9 +23,12 @@ from api_client.model import (
     Credentials,
 )
 
-logger = logging.getLogger("autoretouch-python-client")
+__all__ = [
+    "AutoRetouchAPIClient",
+    "DEFAULT_API_CONFIG"
+]
 
-__all__ = ["AutoRetouchAPIClient", "DEFAULT_API_CONFIG"]
+logger = logging.getLogger("autoretouch-python-client")
 
 DEFAULT_API_CONFIG = ApiConfig(
     BASE_API_URL="https://api.autoretouch.com",
@@ -90,6 +93,7 @@ class AutoRetouchAPIClient:
     :param user_agent:
     :param save_credentials: whether the credentials should be saved. Default: True
     """
+
     def __init__(
             self,
             organization_id: Optional[Union[str, UUID]] = DEFAULT_ORG_ID,
@@ -196,7 +200,8 @@ class AutoRetouchAPIClient:
         return organizations
 
     @authenticated
-    def get_organization(self, organization_id) -> Organization:
+    def get_organization(self, organization_id: Optional[UUID] = None) -> Organization:
+        organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/organization/{organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
         response = requests.get(url=url, headers=headers)
@@ -464,7 +469,7 @@ class AutoRetouchAPIClient:
             f.write(result)
 
     @staticmethod
-    def get_processable_image_files(image_dir: str) -> List[str]:
+    def find_images(image_dir: str) -> List[str]:
         return [
             *filter(
                 lambda f: os.path.splitext(f)[-1] in {".jpeg", ".jpg", ".png", ".tif", ".tiff"},
@@ -482,7 +487,7 @@ class AutoRetouchAPIClient:
         """apply a workflow to a directory of images and download the results to `target_dir`"""
         organization_id = self._get_organization_id(organization_id)
         workflow_id = self._get_workflow_id(workflow_id)
-        image_paths = self.get_processable_image_files(image_dir)
+        image_paths = self.find_images(image_dir)
         executor = ThreadPoolExecutor(max_workers=min(200, len(image_paths)))
         futures_to_images = {}
         for path in image_paths:

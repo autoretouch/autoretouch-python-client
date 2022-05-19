@@ -72,10 +72,13 @@ def autocomplete_user_workflows(ctx, param, incomplete):
 
 
 @click.command()
-@click.option("--organization-id", "-o", default=None, shell_complete=autocomplete_user_organizations)
-@click.option("--workflow-id", "-w", default=None, shell_complete=autocomplete_user_workflows)
+@click.option("--organization-id", "-o", default=None, shell_complete=autocomplete_user_organizations,
+              help="the id of the organization that the autoretouch cli will use by default")
+@click.option("--workflow-id", "-w", default=None, shell_complete=autocomplete_user_workflows,
+              help="the id of the workflow that the autoretouch cli will use by default")
 @click_log.simple_verbosity_option(logger)
 def use(organization_id, workflow_id):
+    """set parts of your autoretouch config"""
     client = AutoRetouchAPIClient()
     if organization_id is not None:
         org = client.get_organization(organization_id)
@@ -93,7 +96,8 @@ def use(organization_id, workflow_id):
 
 
 @click.command()
-@click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False), help='Output format: text/json')
+@click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False),
+              help='the output format. Must be one of [text, json], default=text')
 @click_log.simple_verbosity_option(logger)
 def organizations(format):
     """list all your organizations"""
@@ -106,10 +110,13 @@ def organizations(format):
 
 
 @click.command()
-@click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False), help='Output format: text/json')
-@click.argument('organization_id', shell_complete=autocomplete_user_organizations)
+@click.argument('organization_id', default=None, shell_complete=autocomplete_user_organizations,
+                help="id of the organization you want to get. "
+                     "If not provided, default to the organization set in your config")
+@click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False),
+              help='the output format. Must be one of [text, json], default=text')
 @click_log.simple_verbosity_option(logger)
-def organization(format, organization_id):
+def organization(organization_id, format):
     """show details of given organization"""
     org = AutoRetouchAPIClient().get_organization(organization_id)
     if format == 'text':
@@ -119,16 +126,17 @@ def organization(format, organization_id):
 
 
 @click.command()
-@click.argument('files', type=click.File('rb'), nargs=-1)
+@click.argument('images', type=click.File('rb'), nargs=-1,
+                help="path to the images to upload")
 @click_log.simple_verbosity_option(logger)
-def upload(files):
-    """upload an image from disk"""
+def upload(images):
+    """upload an image/images to autoretouch"""
     client = AutoRetouchAPIClient()
-    for file in files:
+    for file in images:
         click.echo(f"{file.name} is uploaded as {client.upload_image_from_stream(file)}")
 
 
-@click.command("balance")
+@click.command()
 @click_log.simple_verbosity_option(logger)
 def balance():
     """show your current balance"""
@@ -136,22 +144,24 @@ def balance():
 
 
 @click.command()
-@click.argument('input', type=click.Path(exists=True), required=True)
-@click.argument('output', type=click.Path(exists=True), required=True)
-@click.option('--workflow-id', '-w', required=False, shell_complete=autocomplete_user_workflows)
-@click.option('--yes', '-y', required=False, is_flag=True, help="Skip confirmation")
+@click.argument('input', type=click.Path(exists=True), required=True,
+                help="path to an image or to a folder of images")
+@click.argument('output', type=click.Path(exists=True), required=True,
+                help="destination folder for processed image(s)")
+@click.option('--workflow-id', '-w', required=False, shell_complete=autocomplete_user_workflows,
+              help="id of the workflow to use for processing. Default to the workflow set in your config")
+@click.option('--yes', '-y', required=False, is_flag=True,
+              help="skip confirmation")
 @click_log.simple_verbosity_option(logger)
 def process(input: str, output: str, workflow_id: Optional[UUID], yes: bool = False):
-    """process an image or a folder of images and wait for the result
-
-    INPUT: path of image file or folder of image files.
-    OUTPUT: destination folder for processed image(s).
+    """
+    process an image or a folder of images and wait for the result
     """
     client = AutoRetouchAPIClient()
     if os.path.isfile(input):
         client.process_image(input, output, workflow_id=workflow_id)
     else:
-        images = client.get_processable_image_files(input)
+        images = client.find_images(input)
         if not yes:
             click.confirm(f"Are you sure you want to process {len(images)} images?", abort=True)
         logger.info(f"Uploading and processing {len(images)} images ...")
@@ -160,11 +170,20 @@ def process(input: str, output: str, workflow_id: Optional[UUID], yes: bool = Fa
 
 
 @click.command()
-def workflows():
+@click.argument('organization_id', default=None, shell_complete=autocomplete_user_organizations,
+                help="id of the organization you want to get. "
+                     "If not provided, default to the organization set in your config")
+@click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False),
+              help='the output format. Must be one of [text, json], default=text')
+def workflows(organization_id, format):
+    """list the workflows defined in an organization"""
     client = AutoRetouchAPIClient()
-    workflows = client.get_workflows()
-    for workflow in workflows:
-        click.echo(f"{workflow.name}: {workflow.id}")
+    workflows = client.get_workflows(organization_id)
+    if format == 'text':
+        for workflow in workflows:
+            click.echo(f"{workflow.name}: {workflow.id}")
+    if format == 'json':
+        click.echo(json.dumps([w.to_dict() for w in workflows], indent=4, cls=UUIDEncoder))
 
 
 autoretouch_cli.add_command(login)
