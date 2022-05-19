@@ -4,10 +4,10 @@ from unittest import TestCase
 from uuid import UUID
 from assertpy import assert_that
 
-from api_client.client import (
+from autoretouch.api_client.client import (
     AutoRetouchAPIClient,
 )
-from api_client.model import Organization, Workflow, WorkflowExecution
+from autoretouch.api_client.model import Organization, Workflow, WorkflowExecution
 from test.api_config_dev import CONFIG_DEV
 
 CREDENTIALS_PATH = "../tmp/credentials.json"

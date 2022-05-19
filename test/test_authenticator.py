@@ -1,10 +1,10 @@
 import time
-from unittest import TestCase, skip
+from unittest import TestCase
 from assertpy import assert_that
 import os
 import signal
 
-from api_client.client import AutoRetouchAPIClient
+from autoretouch.api_client.client import AutoRetouchAPIClient
 from test.api_config_dev import CONFIG_DEV
 
 USER_AGENT = "Python-Unit-Test-0.0.1"
