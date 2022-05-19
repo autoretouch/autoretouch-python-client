@@ -221,6 +221,12 @@ class AutoRetouchAPIClient:
 
     @authenticated
     def get_workflow(self, workflow_id: UUID, organization_id: Optional[UUID] = None, ) -> Workflow:
+        """
+        get workflow
+        :param workflow_id:
+        :param organization_id:
+        :return:
+        """
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/{workflow_id}?organization={organization_id}"
         response = requests.get(url, headers=self.base_headers)

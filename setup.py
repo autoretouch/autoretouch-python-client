@@ -19,13 +19,14 @@ class PostInstallCommand(install):
                   f"&& . ~/.zshrc")
 
 
+REQUIREMENTS = open("requirements.txt", "r").readlines()
+
+
 setup(
     name='autoretouch_cli',
-    version='2.0.0',
+    version='0.0.1',
     packages=find_packages(exclude=['tests', 'assets', 'tmp']),
-    install_requires=[
-        "requests", "Click"
-    ],
+    install_requires=REQUIREMENTS,
     entry_points={
         'console_scripts': [
             'autoretouch = cli.commands:autoretouch_cli',
