@@ -23,12 +23,14 @@ class PostInstallCommand(install):
             print(f"failed to install autocompletion. Exception was: {str(e)}")
 
 
-REQUIREMENTS = open("requirements.txt", "r").readlines()
+print("*******", os.getcwd())
+cwd = os.path.abspath(os.path.dirname(__file__))
+REQUIREMENTS = open(os.path.join(cwd, "requirements.txt"), "r").readlines()
 
 setup(
     name='autoretouch',
     version='0.0.1',
-    authors=["Antoine Daurat <antoine@autoretouch.com>", "Oliver Allweyer <oliver@autoretouch.com>",
+    author=["Antoine Daurat <antoine@autoretouch.com>", "Oliver Allweyer <oliver@autoretouch.com>",
              "Till Lorentzen <till@autoretouch.com>"],
     description="cli and python package to communicate with the autoRetouch API",
     license="BSD Zero",
@@ -40,7 +42,7 @@ setup(
         ],
     },
     package_data={
-        "": ["*.zsh"]
+        "": ["*.zsh", "*.txt"]
     },
     cmdclass={
         'install': PostInstallCommand,
