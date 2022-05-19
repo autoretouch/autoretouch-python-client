@@ -25,6 +25,7 @@ class PostInstallCommand(install):
 
 print("*******", os.getcwd())
 cwd = os.path.abspath(os.path.dirname(__file__))
+print("*******", cwd)
 REQUIREMENTS = open(os.path.join(cwd, "requirements.txt"), "r").readlines()
 
 setup(
