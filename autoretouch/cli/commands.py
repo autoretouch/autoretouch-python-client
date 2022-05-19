@@ -7,7 +7,7 @@ import logging
 from typing import Optional
 from uuid import UUID
 
-from api_client.client import AutoRetouchAPIClient, USER_CONFIG, USER_CONFIG_PATH
+from autoretouch.api_client.client import AutoRetouchAPIClient, USER_CONFIG, USER_CONFIG_PATH
 
 logger = logging.getLogger("autoretouch-python-client")
 logger.setLevel("INFO")
@@ -53,7 +53,7 @@ def logout():
     """
     revoke and remove stored refresh token from disk
     """
-    AutoRetouchAPIClient().revoke().logout()
+    AutoRetouchAPIClient().revoke_credentials().logout()
 
 
 @click.group()

@@ -3,8 +3,10 @@ venv
 *.DS_Store
 .idea/
 .vscode/
+*.lock
 venv/
 build/
+dist/
 
 access_token.txt
 credentials.json

@@ -5,7 +5,7 @@ import webbrowser
 import logging
 from datetime import datetime
 from typing import Optional
-from api_client.model import Credentials, DeviceCodeResponse
+from autoretouch.api_client.model import Credentials, DeviceCodeResponse
 
 logger = logging.getLogger("autoretouch-python-client")
 

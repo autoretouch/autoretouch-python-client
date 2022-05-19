@@ -1,6 +1,23 @@
-# autoretouch CLI and Python Client
+# autoRetouch client
 
-## Autoretouch CLI
+## Installation
+
+Prerequisites: Sign up for free at https://app.autoretouch.com.
+
+### from pypi
+
+```python
+pip install autoretouch
+```
+
+### for development
+
+clone this repo and then
+```
+pip install -e .
+```
+
+## CLI
 
 CLI for interacting with [autoretouch: the ai-powered image editing platform](https://app.autoretouch.com).
 
@@ -8,20 +25,7 @@ Process images straight from your terminal.
 
 ### Features 
 
-* ZSH auto-completion 
-
-### Installation
-
-Prerequisites: Sign up for free at https://app.autoretouch.com.
-
-Install from pypi:
-
-`TODO`
-
-Install CLI for development:
-```
-pip install -e .
-```
+* ZSH auto-completion
 
 ### Usage
 ```
@@ -45,20 +49,12 @@ Commands:
 ```
 
 
-## autoretouch python client
+## python client
 
 Work in Progress Python client implementation for the most important public API endpoints for https://www.autoretouch.com.
 
 API documentation: https://docs.api.autoretouch.com
 
-
-### Installation 
-
-```shell script
-python3 -m venv venv 
-source venv/bin/activate
-pip install -r requirements.txt
-```
 
 ### Usage
 
@@ -72,7 +68,7 @@ In most cases, you would like to process images according to some workflow withi
 To do so, you can simply
 
 ```python3
-from api_client.client import AutoRetouchAPIClient
+from autoretouch.api_client.client import AutoRetouchAPIClient
 
 organization_id = "e722e62e-5b2e-48e1-8638-25890e7279e3"
 

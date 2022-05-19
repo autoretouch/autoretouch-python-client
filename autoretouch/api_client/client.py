@@ -11,8 +11,8 @@ import requests
 from typing import Dict, List, Optional, Callable, TypeVar, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from api_client.authenticator import Authenticator
-from api_client.model import (
+from autoretouch.api_client.authenticator import Authenticator
+from autoretouch.api_client.model import (
     ApiConfig,
     Organization,
     Page,
