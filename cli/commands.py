@@ -23,7 +23,10 @@ class UUIDEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-@click.group()
+CONTEXT_SETTINGS = dict(help_option_names=['--help', '-h'])
+
+
+@click.group(context_settings=CONTEXT_SETTINGS)
 def autoretouch_cli():
     pass
 
@@ -32,6 +35,8 @@ def autoretouch_cli():
 @click_log.simple_verbosity_option(logger)
 def login():
     """
+    authenticate with your autoretouch account
+
     create/fetch credentials from the environment variables
         - AUTORETOUCH_REFRESH_TOKEN
         or
@@ -51,11 +56,19 @@ def logout():
     AutoRetouchAPIClient().revoke().logout()
 
 
-@click.command()
-@click_log.simple_verbosity_option(logger)
-def show_config():
+@click.group()
+def config():
     """
-    print the name and id of your currently used organization
+    configure/show which organization and workflow are used by default
+    """
+    pass
+
+
+@click.command(name="get")
+@click_log.simple_verbosity_option(logger)
+def config_get():
+    """
+    show the organization and workflow that are currently used by default
     """
     for key, value in USER_CONFIG.items():
         click.echo(key)
@@ -71,11 +84,14 @@ def autocomplete_user_workflows(ctx, param, incomplete):
     return [str(k.id) for k in AutoRetouchAPIClient().get_workflows() if k.name.startswith(incomplete)]
 
 
-@click.command()
+@click.command(name="set")
 @click.option("--organization-id", "-o", default=None, shell_complete=autocomplete_user_organizations)
 @click.option("--workflow-id", "-w", default=None, shell_complete=autocomplete_user_workflows)
 @click_log.simple_verbosity_option(logger)
-def use(organization_id, workflow_id):
+def config_set(organization_id, workflow_id):
+    """
+    configure the organization and/or workflow that are used by default
+    """
     client = AutoRetouchAPIClient()
     if organization_id is not None:
         org = client.get_organization(organization_id)
@@ -96,7 +112,9 @@ def use(organization_id, workflow_id):
 @click.option('--format', '-f', default="text", type=click.Choice(['text', 'json'], case_sensitive=False), help='Output format: text/json')
 @click_log.simple_verbosity_option(logger)
 def organizations(format):
-    """list all your organizations"""
+    """
+    list all your organizations
+    """
     orgs = AutoRetouchAPIClient().get_organizations()
     if format == 'text':
         for org in orgs:
@@ -110,7 +128,9 @@ def organizations(format):
 @click.argument('organization_id', shell_complete=autocomplete_user_organizations)
 @click_log.simple_verbosity_option(logger)
 def organization(format, organization_id):
-    """show details of given organization"""
+    """
+    show details of given organization
+    """
     org = AutoRetouchAPIClient().get_organization(organization_id)
     if format == 'text':
         click.echo(f"{org.name}: {org.id}")
@@ -122,7 +142,9 @@ def organization(format, organization_id):
 @click.argument('files', type=click.File('rb'), nargs=-1)
 @click_log.simple_verbosity_option(logger)
 def upload(files):
-    """upload an image from disk"""
+    """
+    upload an image from disk
+    """
     client = AutoRetouchAPIClient()
     for file in files:
         click.echo(f"{file.name} is uploaded as {client.upload_image_from_stream(file)}")
@@ -131,7 +153,11 @@ def upload(files):
 @click.command("balance")
 @click_log.simple_verbosity_option(logger)
 def balance():
-    """show your current balance"""
+    """
+    show your organization's credit balance
+
+    default format: autoretouch credits - corresponds to € cents excl. VAT
+    """
     click.echo(AutoRetouchAPIClient().get_balance())
 
 
@@ -142,7 +168,8 @@ def balance():
 @click.option('--yes', '-y', required=False, is_flag=True, help="Skip confirmation")
 @click_log.simple_verbosity_option(logger)
 def process(input: str, output: str, workflow_id: Optional[UUID], yes: bool = False):
-    """process an image or a folder of images and wait for the result
+    """
+    process an image or a folder of images and wait for the result
 
     INPUT: path of image file or folder of image files.
     OUTPUT: destination folder for processed image(s).
@@ -161,6 +188,9 @@ def process(input: str, output: str, workflow_id: Optional[UUID], yes: bool = Fa
 
 @click.command()
 def workflows():
+    """
+    show workflows
+    """
     client = AutoRetouchAPIClient()
     workflows = client.get_workflows()
     for workflow in workflows:
@@ -171,8 +201,9 @@ autoretouch_cli.add_command(login)
 autoretouch_cli.add_command(logout)
 autoretouch_cli.add_command(organizations)
 autoretouch_cli.add_command(organization)
-autoretouch_cli.add_command(show_config)
-autoretouch_cli.add_command(use)
+config.add_command(config_get)
+config.add_command(config_set)
+autoretouch_cli.add_command(config)
 autoretouch_cli.add_command(upload)
 autoretouch_cli.add_command(balance)
 autoretouch_cli.add_command(process)

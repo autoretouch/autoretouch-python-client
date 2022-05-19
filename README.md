@@ -1,11 +1,58 @@
-# autoretouch Python Client
+# autoretouch CLI and Python Client
+
+## Autoretouch CLI
+
+CLI for interacting with [autoretouch: the ai-powered image editing platform](https://app.autoretouch.com).
+
+Process images straight from your terminal.
+
+### Features 
+
+* ZSH auto-completion 
+
+### Installation
+
+Prerequisites: Sign up for free at https://app.autoretouch.com.
+
+Install from pypi:
+
+`TODO`
+
+Install CLI for development:
+```
+pip install -e .
+```
+
+### Usage
+```
+Usage: autoretouch [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  -h, --help  Show this message and exit.
+
+Commands:
+  balance        show your organization's current balance
+  config         configure/show which organization and workflow are used by default
+    get          show the organization and workflow that are currently used by default
+    set          configure the organization and/or workflow that are used by default
+  login          authenticate with your autoretouch account
+  logout         revoke and remove stored refresh token from disk
+  organization   show details of given organization
+  organizations  list all your organizations
+  process        process an image or a folder of images and wait for the result
+  upload         upload an image from disk
+  workflows      show workflows
+```
+
+
+## autoretouch python client
 
 Work in Progress Python client implementation for the most important public API endpoints for https://www.autoretouch.com.
 
 API documentation: https://docs.api.autoretouch.com
 
 
-## Installation 
+### Installation 
 
 ```shell script
 python3 -m venv venv 
@@ -13,13 +60,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Usage
+### Usage
 
 This package exposes a single class `AutoretouchClient` allowing high- and low-level interactions with the autoRetouch API.
 
-### High-level
+#### High-level
 
-#### Batch 
+##### Batch 
 
 In most cases, you would like to process images according to some workflow within the scope of an organization.
 To do so, you can simply
@@ -49,7 +96,7 @@ ar_client.process_batch(workflow_id, input_dir, output_dir)
 - Get your `workflow_id` from https://app.autoretouch.com/workflows > `⋮` > Workflow API Information > id.
 ---
 
-#### Single Image
+##### Single Image
 
 If you wish to process a single image with a workflow, you can do
 
@@ -65,7 +112,7 @@ This is the method called internally by `proces_batch`. It will
 
 This is the recommended way to efficiently process images through our asynchronous api.  
 
-#### Authentication
+##### Authentication
 
 The `AutoRetouchAPIClient` authenticates itself with the [device flow](https://auth0.com/docs/get-started/authentication-and-authorization-flow/device-authorization-flow) of `auth0`.
 Upon instantiation of the client, you can configure
@@ -83,30 +130,8 @@ The first time you use the client, this triggers the device flow and saves the o
 After that, it automatically falls back to this path and authenticates itself without you having to do anything :wink:
 
 
-### Low-level Endpoints
+#### Low-level Endpoints
 
 for finer interactions with the API, the client exposes methods corresponding to endpoints.
 
 TODO: table with `method name & signature | api docs link`
-
-# Autoretouch CLI
-
-Install CLI for development:
-```
-pip install -e .
-```
-
-```
-autoretouch login/auth
-autoretouch logout
-autoretouch config
-  get/set/list
-autoretouch execute/process
-```
-
-```
-export AUTORETOUCH_ORGANIZATION=""
-export AUTORETOUCH_REFRESH_TOKEN=""
-export AUTORETOUCH_CREDENTIAL_PATH=""
-autoretouch balance
-```
