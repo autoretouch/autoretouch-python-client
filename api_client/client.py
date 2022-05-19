@@ -9,7 +9,6 @@ from uuid import UUID
 
 import requests
 from typing import Dict, List, Optional, Callable, TypeVar, Union
-from functools import wraps
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from api_client.authenticator import Authenticator
@@ -110,6 +109,7 @@ class AutoRetouchAPIClient:
     # ****** AUTH ENDPOINTS ******
 
     def get_device_code(self) -> DeviceCodeResponse:
+        logger.info("requesting new device code...")
         url = f"{self.api_config.AUTH_DOMAIN}/oauth/device/code"
         payload = f"client_id={self.api_config.CLIENT_ID}&scope={self.api_config.SCOPE}&audience={self.api_config.AUDIENCE}"
         headers = {
@@ -117,10 +117,13 @@ class AutoRetouchAPIClient:
             "Content-Type": "application/x-www-form-urlencoded",
         }
         response = requests.post(url=url, headers=headers, data=payload)
+        logger.debug(f"{url} answered with status {response.status_code()}")
         response.raise_for_status()
+        logger.info("new device code request was successful")
         return DeviceCodeResponse.from_dict(response.json())
 
     def get_credentials_from_device_code(self, device_code: str) -> Credentials:
+        logger.info("requesting new credentials from device code...")
         url = f"{self.api_config.AUTH_DOMAIN}/oauth/token"
         payload = (
             f"grant_type=urn:ietf:params:oauth:grant-type:device_code"
@@ -132,10 +135,13 @@ class AutoRetouchAPIClient:
             "Content-Type": "application/x-www-form-urlencoded",
         }
         response = requests.post(url=url, headers=headers, data=payload)
+        logger.debug(f"{url} answered with status {response.status_code()}")
         response.raise_for_status()
+        logger.info("successfully obtained new credentials")
         return Credentials(**response.json())
 
     def get_credentials_from_refresh_token(self, refresh_token: str) -> Credentials:
+        logger.info("requesting new credentials from refresh token...")
         url = f"{self.api_config.AUTH_DOMAIN}/oauth/token"
         payload = (
             f"grant_type=refresh_token"
@@ -147,15 +153,20 @@ class AutoRetouchAPIClient:
             "Content-Type": "application/x-www-form-urlencoded",
         }
         response = requests.post(url=url, headers=headers, data=payload)
+        logger.debug(f"{url} answered with status {response.status_code()}")
         response.raise_for_status()
+        logger.info("successfully obtained new credentials")
         return Credentials(refresh_token=refresh_token, **response.json())
 
     def revoke_refresh_token(self, refresh_token: str) -> int:
+        logger.info("revoking refreh token...")
         url = f"{self.api_config.AUTH_DOMAIN}/oauth/revoke"
         payload = {"client_id": self.api_config.CLIENT_ID, "token": refresh_token}
         headers = {"User-Agent": self.user_agent, "Content-Type": "application/json"}
         response = requests.post(url=url, headers=headers, data=json.dumps(payload))
+        logger.debug(f"{url} answered with status {response.status_code()}")
         response.raise_for_status()
+        logger.info("successfully revoked refresh token")
         return response.status_code
 
     def authenticated(self):
@@ -166,22 +177,29 @@ class AutoRetouchAPIClient:
             auth.refresh_credentials()
 
     def login(self):
+        logger.info("logging in...")
         self.auth.authenticate()
+        logger.info("logged in!")
         return self
 
     def logout(self):
+        logger.info("logging out...")
         self.authenticated()
         self.auth.logout()
+        logger.info("logged out!")
         return self
 
-    def revoke(self):
+    def revoke_credentials(self):
+        logger.info("revoking credentials...")
         self.authenticated()
         self.auth.revoke_refresh_token()
+        logger.info("successfully revoked credentials")
         return self
 
     # ****** API ******
 
     def get_organizations(self) -> List[Organization]:
+        logger.info("getting organizations...")
         self.authenticated()
         url = f"{self.api_config.BASE_API_URL_CURRENT}/organization?limit=50&offset=0"
         headers = {**self.base_headers, "Content-Type": "application/json"}
@@ -192,6 +210,7 @@ class AutoRetouchAPIClient:
         return organizations
 
     def get_organization(self, organization_id: Optional[UUID] = None) -> Organization:
+        logger.info("getting organization...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/organization/{organization_id}"
@@ -201,6 +220,7 @@ class AutoRetouchAPIClient:
         return Organization.from_dict(response.json())
 
     def get_workflows(self, organization_id: Optional[UUID] = None) -> List[Workflow]:
+        logger.info("getting workflows...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow?limit=50&offset=0&organization={organization_id}"
@@ -212,12 +232,7 @@ class AutoRetouchAPIClient:
         return workflows
 
     def get_workflow(self, workflow_id: UUID, organization_id: Optional[UUID] = None, ) -> Workflow:
-        """
-        get workflow
-        :param workflow_id:
-        :param organization_id:
-        :return:
-        """
+        logger.info("getting workflow...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/{workflow_id}?organization={organization_id}"
@@ -228,6 +243,7 @@ class AutoRetouchAPIClient:
     def get_workflow_executions(
             self, workflow_id: UUID, organization_id: Optional[UUID] = None
     ) -> Page:
+        logger.info("getting workflow executions...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution?workflow={workflow_id}&limit=50&offset=0&organization={organization_id}"
@@ -240,6 +256,7 @@ class AutoRetouchAPIClient:
     def upload_image(
             self, image_path: str, organization_id: Optional[UUID] = None
     ) -> str:
+        logger.info("uploading image...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
@@ -252,6 +269,7 @@ class AutoRetouchAPIClient:
         return response.content.decode(response.encoding)
 
     def upload_image_from_stream(self, open_file: io.BufferedReader, organization_id: Optional[UUID] = None) -> str:
+        logger.info("uploading image from stream...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
@@ -269,6 +287,7 @@ class AutoRetouchAPIClient:
             mimetype: Optional[str] = None,
             organization_id: Optional[UUID] = None,
     ) -> str:
+        logger.info("uploading image from bytes...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
@@ -288,6 +307,7 @@ class AutoRetouchAPIClient:
             workflow_version_id: Optional[UUID] = None,
             organization_id: Optional[UUID] = None,
     ) -> UUID:
+        logger.info("creating workflow execution for image file...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         labels = labels or {}
@@ -320,6 +340,7 @@ class AutoRetouchAPIClient:
             workflow_version_id: Optional[UUID] = None,
             organization_id: Optional[UUID] = None,
     ) -> UUID:
+        logger.info("creating workflow execution for image reference...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         version_str = f"&version={workflow_version_id}" if workflow_version_id else ""
@@ -347,6 +368,7 @@ class AutoRetouchAPIClient:
     def get_workflow_execution_details(
             self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> WorkflowExecution:
+        logger.info("getting workflow execution details...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}?organization={organization_id}"
@@ -358,6 +380,7 @@ class AutoRetouchAPIClient:
     def get_workflow_execution_status_blocking(
             self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> str:
+        logger.info("getting workflow execution status...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/status?organization={organization_id}"
@@ -373,6 +396,7 @@ class AutoRetouchAPIClient:
             image_name: str,
             organization_id: Optional[UUID] = None,
     ) -> bytes:
+        logger.info("downloading image...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/image/{image_content_hash}/{image_name}?organization={organization_id}"
@@ -383,6 +407,7 @@ class AutoRetouchAPIClient:
     def download_result_blocking(
             self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> bytes:
+        logger.info("downloading result (blocking)...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/result/default?organization={organization_id}"
@@ -393,6 +418,7 @@ class AutoRetouchAPIClient:
     def download_result(
             self, result_path: str, organization_id: Optional[UUID] = None
     ) -> bytes:
+        logger.info("downloading result...")
         self.authenticated()
         assert result_path.startswith("/image/")
         organization_id = self._get_organization_id(organization_id)
@@ -404,6 +430,7 @@ class AutoRetouchAPIClient:
     def retry_workflow_execution(
             self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> int:
+        logger.info("retrying workflow execution...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/retry?organization={organization_id}"
@@ -411,6 +438,7 @@ class AutoRetouchAPIClient:
         return requests.post(url=url, headers=headers, data={}).status_code
 
     def get_balance(self, organization_id: Optional[UUID] = None) -> int:
+        logger.info("getting balance...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/organization/balance?organization={organization_id}"
@@ -428,6 +456,7 @@ class AutoRetouchAPIClient:
             expected_images_content_hashes: List[str] = [],
             organization_id: Optional[UUID] = None,
     ):
+        logger.info("sending feedback...")
         self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/feedback?organization={organization_id}"
@@ -512,6 +541,7 @@ class AutoRetouchAPIClient:
                 " Either set the client instance attribute "
                 "or passed it as kwarg when calling a client's method."
             )
+        logger.info(f"using{' ' if value == passed_in_value else 'default '} organization id: {value}")
         return value
 
     def _get_workflow_id(self, passed_in_value):
@@ -522,4 +552,5 @@ class AutoRetouchAPIClient:
                 " Either set the client instance attribute "
                 "or passed it as kwarg when calling a client's method."
             )
+        logger.info(f"using{' ' if value == passed_in_value else 'default '} workflow id: {value}")
         return value

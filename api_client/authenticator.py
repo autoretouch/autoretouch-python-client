@@ -58,13 +58,16 @@ class Authenticator:
 
     def authenticate(self):
         if self.refresh_token is not None:
+            logger.info("authenticating from refresh token")
             self.credentials = self.api.get_credentials_from_refresh_token(
                 self.refresh_token
             )
         elif self.credentials_path is not None and os.path.isfile(self.credentials_path):
+            logger.info(f"authenticating from stored at {self.credentials_path}")
             self.credentials = self._read_credentials_file()
             self.refresh_credentials()
         else:
+            logger.info(f"authenticating with new device flow")
             device_code_response = self.api.get_device_code()
             _open_browser_for_verification(device_code_response)
             self.credentials = _poll_credentials_while_user_confirm(
@@ -75,6 +78,7 @@ class Authenticator:
             if not self.credentials_path:
                 logger.warning("Can not save credentials, no credentials path given")
             self._save_credentials()
+            logger.info(f"successfully stored credentials at {self.credentials_path}")
         return self
 
     @property
@@ -87,6 +91,7 @@ class Authenticator:
         return now + 30 > self.credentials.expires_at
 
     def refresh_credentials(self):
+        logger.info("refreshing credentials")
         self.credentials = self.api.get_credentials_from_refresh_token(
             refresh_token=self.credentials.refresh_token
         )
@@ -118,6 +123,7 @@ class Authenticator:
     def logout(self):
         if os.path.isfile(self.credentials_path):
             os.remove(self.credentials_path)
+            logger.info(f"removed credentials at {self.credentials_path}")
         self.credentials = None
         self.refresh_token = None
         return self
