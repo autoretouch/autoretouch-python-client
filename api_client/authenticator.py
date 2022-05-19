@@ -63,9 +63,9 @@ class Authenticator:
                 self.refresh_token
             )
         elif self.credentials_path is not None and os.path.isfile(self.credentials_path):
-            logger.info(f"authenticating from stored at {self.credentials_path}")
+            logger.info(f"found stored credentials at {self.credentials_path}")
             self.credentials = self._read_credentials_file()
-            self.refresh_credentials()
+            self._refresh_credentials_if_expired()
         else:
             logger.info(f"authenticating with new device flow")
             device_code_response = self.api.get_device_code()
@@ -74,11 +74,7 @@ class Authenticator:
                 self.api, device_code_response
             )
             logger.info("Login was successful")
-        if self.save_credentials:
-            if not self.credentials_path:
-                logger.warning("Can not save credentials, no credentials path given")
             self._save_credentials()
-            logger.info(f"successfully stored credentials at {self.credentials_path}")
         return self
 
     @property
@@ -95,6 +91,7 @@ class Authenticator:
         self.credentials = self.api.get_credentials_from_refresh_token(
             refresh_token=self.credentials.refresh_token
         )
+        self._save_credentials()
         return self
 
     def revoke_refresh_token(self) -> int:
@@ -110,6 +107,12 @@ class Authenticator:
             return Credentials(**json.load(credentials_file))
 
     def _save_credentials(self):
+        if not self.save_credentials:
+            return
+        if not self.credentials_path:
+            logger.warning("Can not save credentials, no credentials path given")
+            return
+        logger.info(f"successfully stored credentials at {self.credentials_path}")
         if not os.path.exists(os.path.dirname(self.credentials_path)):
             os.makedirs(os.path.dirname(self.credentials_path), exist_ok=True)
         with open(self.credentials_path, "w") as credentials_file:

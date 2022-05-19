@@ -117,7 +117,7 @@ class AutoRetouchAPIClient:
             "Content-Type": "application/x-www-form-urlencoded",
         }
         response = requests.post(url=url, headers=headers, data=payload)
-        logger.debug(f"{url} answered with status {response.status_code()}")
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         logger.info("new device code request was successful")
         return DeviceCodeResponse.from_dict(response.json())
@@ -135,7 +135,7 @@ class AutoRetouchAPIClient:
             "Content-Type": "application/x-www-form-urlencoded",
         }
         response = requests.post(url=url, headers=headers, data=payload)
-        logger.debug(f"{url} answered with status {response.status_code()}")
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         logger.info("successfully obtained new credentials")
         return Credentials(**response.json())
@@ -153,18 +153,18 @@ class AutoRetouchAPIClient:
             "Content-Type": "application/x-www-form-urlencoded",
         }
         response = requests.post(url=url, headers=headers, data=payload)
-        logger.debug(f"{url} answered with status {response.status_code()}")
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         logger.info("successfully obtained new credentials")
         return Credentials(refresh_token=refresh_token, **response.json())
 
     def revoke_refresh_token(self, refresh_token: str) -> int:
-        logger.info("revoking refreh token...")
+        logger.info("revoking refresh token...")
         url = f"{self.api_config.AUTH_DOMAIN}/oauth/revoke"
         payload = {"client_id": self.api_config.CLIENT_ID, "token": refresh_token}
         headers = {"User-Agent": self.user_agent, "Content-Type": "application/json"}
         response = requests.post(url=url, headers=headers, data=json.dumps(payload))
-        logger.debug(f"{url} answered with status {response.status_code()}")
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         logger.info("successfully revoked refresh token")
         return response.status_code
@@ -204,6 +204,7 @@ class AutoRetouchAPIClient:
         url = f"{self.api_config.BASE_API_URL_CURRENT}/organization?limit=50&offset=0"
         headers = {**self.base_headers, "Content-Type": "application/json"}
         response = requests.get(url=url, headers=headers)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         page = Page(**response.json())
         organizations = [Organization.from_dict(entry) for entry in page.entries]
@@ -216,6 +217,7 @@ class AutoRetouchAPIClient:
         url = f"{self.api_config.BASE_API_URL_CURRENT}/organization/{organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
         response = requests.get(url=url, headers=headers)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return Organization.from_dict(response.json())
 
@@ -226,6 +228,7 @@ class AutoRetouchAPIClient:
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow?limit=50&offset=0&organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
         response = requests.get(url=url, headers=headers)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         page = Page(**response.json())
         workflows = [Workflow.from_dict(entry) for entry in page.entries]
@@ -237,6 +240,7 @@ class AutoRetouchAPIClient:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/{workflow_id}?organization={organization_id}"
         response = requests.get(url, headers=self.base_headers)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return Workflow.from_dict(response.json())
 
@@ -248,6 +252,7 @@ class AutoRetouchAPIClient:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution?workflow={workflow_id}&limit=50&offset=0&organization={organization_id}"
         response = requests.get(url=url, headers=self.base_headers)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         page = Page(**response.json())
         page.entries = [WorkflowExecution.from_dict(entry) for entry in page.entries]
@@ -265,6 +270,7 @@ class AutoRetouchAPIClient:
             mimetype, _ = mimetypes.guess_type(file.name)
             files = [("file", (filename, file, mimetype))]
             response = requests.post(url=url, headers=self.base_headers, files=files)
+            logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return response.content.decode(response.encoding)
 
@@ -277,6 +283,7 @@ class AutoRetouchAPIClient:
         mimetype, _ = mimetypes.guess_type(open_file.name)
         files = [("file", (filename, open_file, mimetype))]
         response = requests.post(url=url, headers=self.base_headers, files=files)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return response.content.decode(response.encoding)
 
@@ -296,6 +303,7 @@ class AutoRetouchAPIClient:
         with BytesIO(image_content) as file:
             files = [("file", (image_name, file, mimetype))]
             response = requests.post(url=url, headers=self.base_headers, files=files)
+            logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return response.content.decode(response.encoding)
 
@@ -328,6 +336,7 @@ class AutoRetouchAPIClient:
             mimetype, _ = mimetypes.guess_type(file.name)
             files = [("file", (filename, file, mimetype))]
             response = requests.post(url=url, headers=self.base_headers, files=files)
+            logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return UUID(response.content.decode(response.encoding))
 
@@ -362,6 +371,7 @@ class AutoRetouchAPIClient:
         }
 
         response = requests.post(url=url, headers=headers, data=json.dumps(payload))
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return UUID(response.content.decode(response.encoding))
 
@@ -374,6 +384,7 @@ class AutoRetouchAPIClient:
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}?organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
         response = requests.get(url=url, headers=headers)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return WorkflowExecution.from_dict(response.json())
 
@@ -386,6 +397,7 @@ class AutoRetouchAPIClient:
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/status?organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "text/event-stream"}
         response = requests.get(url=url, headers=headers)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         # TODO: decode event stream format
         return response.content.decode(response.encoding)
@@ -401,6 +413,7 @@ class AutoRetouchAPIClient:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/image/{image_content_hash}/{image_name}?organization={organization_id}"
         response = requests.get(url=url, headers=self.base_headers)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return response.content
 
@@ -412,6 +425,7 @@ class AutoRetouchAPIClient:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/result/default?organization={organization_id}"
         response = requests.get(url=url, headers=self.base_headers)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return response.content
 
@@ -424,6 +438,7 @@ class AutoRetouchAPIClient:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}{result_path}?organization={organization_id}"
         response = requests.get(url=url, headers=self.base_headers)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return response.content
 
@@ -435,7 +450,9 @@ class AutoRetouchAPIClient:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/retry?organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
-        return requests.post(url=url, headers=headers, data={}).status_code
+        response = requests.post(url=url, headers=headers, data={})
+        logger.debug(f"{url} answered with status {response.status_code}")
+        return response.status_code
 
     def get_balance(self, organization_id: Optional[UUID] = None) -> int:
         logger.info("getting balance...")
@@ -444,6 +461,7 @@ class AutoRetouchAPIClient:
         url = f"{self.api_config.BASE_API_URL_CURRENT}/organization/balance?organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
         response = requests.get(url=url, headers=headers)
+        logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return response.content
 
@@ -541,7 +559,7 @@ class AutoRetouchAPIClient:
                 " Either set the client instance attribute "
                 "or passed it as kwarg when calling a client's method."
             )
-        logger.info(f"using{' ' if value == passed_in_value else 'default '} organization id: {value}")
+        logger.info(f"using{' ' if value == passed_in_value else ' default'} organization id: {value}")
         return value
 
     def _get_workflow_id(self, passed_in_value):

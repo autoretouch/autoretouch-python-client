@@ -53,7 +53,7 @@ def logout():
     """
     revoke and remove stored refresh token from disk
     """
-    AutoRetouchAPIClient().revoke().logout()
+    AutoRetouchAPIClient().revoke_credentials().logout()
 
 
 @click.group()
