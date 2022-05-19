@@ -67,21 +67,6 @@ DEFAULT_USER_AGENT = "Autoretouch-Python-Api-Client-0.0.2"
 T = TypeVar("T", bound=Callable)
 
 
-def authenticated(endpoint: T):
-    """decorator to ensure that the client is authenticated before it calls an endpoint"""
-
-    @wraps(endpoint)
-    def wrapper(*args, **kwargs):
-        auth: Authenticator = args[0].auth
-        if auth.credentials is None:
-            auth.authenticate()
-        elif auth.token_expired:
-            auth.refresh_credentials()
-        return endpoint(*args, **kwargs)
-
-    return wrapper
-
-
 class AutoRetouchAPIClient:
     """
     autoRetouch API client
@@ -173,24 +158,31 @@ class AutoRetouchAPIClient:
         response.raise_for_status()
         return response.status_code
 
+    def authenticated(self):
+        auth = self.auth
+        if auth.credentials is None:
+            auth.authenticate()
+        elif auth.token_expired:
+            auth.refresh_credentials()
+
     def login(self):
         self.auth.authenticate()
         return self
 
-    @authenticated
     def logout(self):
+        self.authenticated()
         self.auth.logout()
         return self
 
-    @authenticated
     def revoke(self):
+        self.authenticated()
         self.auth.revoke_refresh_token()
         return self
 
     # ****** API ******
 
-    @authenticated
     def get_organizations(self) -> List[Organization]:
+        self.authenticated()
         url = f"{self.api_config.BASE_API_URL_CURRENT}/organization?limit=50&offset=0"
         headers = {**self.base_headers, "Content-Type": "application/json"}
         response = requests.get(url=url, headers=headers)
@@ -199,8 +191,8 @@ class AutoRetouchAPIClient:
         organizations = [Organization.from_dict(entry) for entry in page.entries]
         return organizations
 
-    @authenticated
     def get_organization(self, organization_id: Optional[UUID] = None) -> Organization:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/organization/{organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
@@ -208,8 +200,8 @@ class AutoRetouchAPIClient:
         response.raise_for_status()
         return Organization.from_dict(response.json())
 
-    @authenticated
     def get_workflows(self, organization_id: Optional[UUID] = None) -> List[Workflow]:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow?limit=50&offset=0&organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
@@ -219,7 +211,6 @@ class AutoRetouchAPIClient:
         workflows = [Workflow.from_dict(entry) for entry in page.entries]
         return workflows
 
-    @authenticated
     def get_workflow(self, workflow_id: UUID, organization_id: Optional[UUID] = None, ) -> Workflow:
         """
         get workflow
@@ -227,16 +218,17 @@ class AutoRetouchAPIClient:
         :param organization_id:
         :return:
         """
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/{workflow_id}?organization={organization_id}"
         response = requests.get(url, headers=self.base_headers)
         response.raise_for_status()
         return Workflow.from_dict(response.json())
 
-    @authenticated
     def get_workflow_executions(
             self, workflow_id: UUID, organization_id: Optional[UUID] = None
     ) -> Page:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution?workflow={workflow_id}&limit=50&offset=0&organization={organization_id}"
         response = requests.get(url=url, headers=self.base_headers)
@@ -245,10 +237,10 @@ class AutoRetouchAPIClient:
         page.entries = [WorkflowExecution.from_dict(entry) for entry in page.entries]
         return page
 
-    @authenticated
     def upload_image(
             self, image_path: str, organization_id: Optional[UUID] = None
     ) -> str:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
         with open(image_path, "rb") as file:
@@ -259,8 +251,8 @@ class AutoRetouchAPIClient:
         response.raise_for_status()
         return response.content.decode(response.encoding)
 
-    @authenticated
     def upload_image_from_stream(self, open_file: io.BufferedReader, organization_id: Optional[UUID] = None) -> str:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
         filename = os.path.basename(open_file.name) or "image"
@@ -270,7 +262,6 @@ class AutoRetouchAPIClient:
         response.raise_for_status()
         return response.content.decode(response.encoding)
 
-    @authenticated
     def upload_image_from_bytes(
             self,
             image_content: bytes,
@@ -278,6 +269,7 @@ class AutoRetouchAPIClient:
             mimetype: Optional[str] = None,
             organization_id: Optional[UUID] = None,
     ) -> str:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
         if not mimetype:
@@ -288,7 +280,6 @@ class AutoRetouchAPIClient:
         response.raise_for_status()
         return response.content.decode(response.encoding)
 
-    @authenticated
     def create_workflow_execution_for_image_file(
             self,
             workflow_id: UUID,
@@ -297,6 +288,7 @@ class AutoRetouchAPIClient:
             workflow_version_id: Optional[UUID] = None,
             organization_id: Optional[UUID] = None,
     ) -> UUID:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         labels = labels or {}
         labels_encoded = "".join(
@@ -319,7 +311,6 @@ class AutoRetouchAPIClient:
         response.raise_for_status()
         return UUID(response.content.decode(response.encoding))
 
-    @authenticated
     def create_workflow_execution_for_image_reference(
             self,
             workflow_id: UUID,
@@ -329,6 +320,7 @@ class AutoRetouchAPIClient:
             workflow_version_id: Optional[UUID] = None,
             organization_id: Optional[UUID] = None,
     ) -> UUID:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         version_str = f"&version={workflow_version_id}" if workflow_version_id else ""
         url = (
@@ -352,10 +344,10 @@ class AutoRetouchAPIClient:
         response.raise_for_status()
         return UUID(response.content.decode(response.encoding))
 
-    @authenticated
     def get_workflow_execution_details(
             self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> WorkflowExecution:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}?organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
@@ -363,10 +355,10 @@ class AutoRetouchAPIClient:
         response.raise_for_status()
         return WorkflowExecution.from_dict(response.json())
 
-    @authenticated
     def get_workflow_execution_status_blocking(
             self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> str:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/status?organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "text/event-stream"}
@@ -375,33 +367,33 @@ class AutoRetouchAPIClient:
         # TODO: decode event stream format
         return response.content.decode(response.encoding)
 
-    @authenticated
     def download_image(
             self,
             image_content_hash: str,
             image_name: str,
             organization_id: Optional[UUID] = None,
     ) -> bytes:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/image/{image_content_hash}/{image_name}?organization={organization_id}"
         response = requests.get(url=url, headers=self.base_headers)
         response.raise_for_status()
         return response.content
 
-    @authenticated
     def download_result_blocking(
             self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> bytes:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/result/default?organization={organization_id}"
         response = requests.get(url=url, headers=self.base_headers)
         response.raise_for_status()
         return response.content
 
-    @authenticated
     def download_result(
             self, result_path: str, organization_id: Optional[UUID] = None
     ) -> bytes:
+        self.authenticated()
         assert result_path.startswith("/image/")
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}{result_path}?organization={organization_id}"
@@ -409,17 +401,17 @@ class AutoRetouchAPIClient:
         response.raise_for_status()
         return response.content
 
-    @authenticated
     def retry_workflow_execution(
             self, workflow_execution_id: UUID, organization_id: Optional[UUID] = None
     ) -> int:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/retry?organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
         return requests.post(url=url, headers=headers, data={}).status_code
 
-    @authenticated
     def get_balance(self, organization_id: Optional[UUID] = None) -> int:
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/organization/balance?organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
@@ -429,7 +421,6 @@ class AutoRetouchAPIClient:
 
     # ****** HIGH-LEVEL METHODS ******
 
-    @authenticated
     def send_feedback(
             self,
             workflow_execution_id: UUID,
@@ -437,6 +428,7 @@ class AutoRetouchAPIClient:
             expected_images_content_hashes: List[str] = [],
             organization_id: Optional[UUID] = None,
     ):
+        self.authenticated()
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/workflow/execution/{workflow_execution_id}/feedback?organization={organization_id}"
         headers = {**self.base_headers, "Content-Type": "application/json"}
