@@ -16,11 +16,9 @@ def add_autocompletion():
         run(f"cp autoretouch/.autoretouch-complete.sh {config_root}/".split())
         bashrc_path = os.path.expanduser("~/.bashrc")
         if os.path.isfile(bashrc_path):
-            print("adding to bashrc")
             string_to_add = "\n\n# autoretouch auto-completion\n. ~/.config/autoretouch/.autoretouch-complete.sh\n\n"
             with open(bashrc_path, "r") as f:
                 bashrc_has_been_added = string_to_add in f.read()
-            print(f"bashrc_has_been_added: {bashrc_has_been_added}")
             if not bashrc_has_been_added:
                 os.system(f"echo \"{string_to_add}\" >> {bashrc_path}")
 
@@ -28,7 +26,6 @@ def add_autocompletion():
         run(f"cp autoretouch/.autoretouch-complete.fish {config_root}/".split())
         fish_completions_path = os.path.expanduser("~/.config/fish/completions")
         if os.path.isdir(fish_completions_path):
-            print("adding to fish/completions")
             fish_completion_file_path = os.path.join(fish_completions_path, ".autoretouch-complete.fish")
             if not os.path.isfile(fish_completion_file_path):
                 os.system(f"cp autoretouch/.autoretouch-complete.fish {fish_completion_file_path}")
@@ -37,28 +34,29 @@ def add_autocompletion():
         run(f"cp autoretouch/.autoretouch-complete.zsh {config_root}/".split())
         zshrc_path = os.path.expanduser("~/.zshrc")
         if os.path.isfile(zshrc_path):
-            print("adding to zshrc")
             string_to_add = "\n\n# autoretouch auto-completion\n. ~/.config/autoretouch/.autoretouch-complete.zsh\n\n"
             with open(zshrc_path, "r") as f:
                 zshrc_has_been_added = string_to_add in f.read()
-            print(zshrc_has_been_added)
             if not zshrc_has_been_added:
                 os.system(f"echo \"{string_to_add}\" >> {zshrc_path}")
 
-    try:
-        add_bash()
-        # add_fish()
-        add_zsh()
-    except Exception as e:
-        print(f"failed to install autocompletion. Exception was: {str(e)}")
+    def add_powershell():
+        pass
+
+    for shell, shell_func in {
+        "bash": add_bash, "fish": add_fish, "zsh": add_zsh, "powershell": add_powershell
+    }.items():
+        try:
+            print(f"add autocompletion for {shell}")
+            shell_func()
+        except Exception as e:
+            print(f"failed to install autocompletion for {shell}. Exception was: {str(e)}")
 
 
 class PostInstallCommand(install):
     """Post-installation for installation mode."""
     # TODO
     #  - autocomplete fish, powershell
-    #  - windows support
-    #  - no logs, no exception in autocomplete mode
     def run(self):
         install.run(self)
         add_autocompletion()
@@ -69,7 +67,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="autoretouch",
-    version="0.0.1",
+    version="0.0.2",
     author=[
         "Antoine Daurat <antoine@autoretouch.com>",
         "Oliver Allweyer <oliver@autoretouch.com>",
@@ -92,7 +90,7 @@ setup(
     },
     include_package_data=True,
     package_data={
-        "autoretouch": [".autoretouch-complete.zsh"]
+        "autoretouch": [".autoretouch-complete.zsh", ".autoretouch-complete.bash", ".autoretouch-complete.fish"]
     },
     entry_points={
         "console_scripts": [
