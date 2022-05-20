@@ -1,117 +1,133 @@
-# autoretouch Python Client
+# autoRetouch client
+
+## Installation
+
+Prerequisites: Sign up for free at https://app.autoretouch.com.
+
+### from pypi
+
+```python
+pip install autoretouch
+```
+
+### for development
+
+clone this repo and then
+```
+pip install -e .
+```
+
+## CLI
+
+CLI for interacting with [autoretouch: the ai-powered image editing platform](https://app.autoretouch.com).
+
+Process images straight from your terminal.
+
+### Features 
+
+* ZSH auto-completion
+
+### Usage
+```
+Usage: autoretouch [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  -h, --help  Show this message and exit.
+
+Commands:
+  balance        show your organization's current balance
+  config         configure/show which organization and workflow are used by default
+    get          show the organization and workflow that are currently used by default
+    set          configure the organization and/or workflow that are used by default
+  login          authenticate with your autoretouch account
+  logout         revoke and remove stored refresh token from disk
+  organization   show details of given organization
+  organizations  list all your organizations
+  process        process an image or a folder of images and wait for the result
+  upload         upload an image from disk
+  workflows      show workflows
+```
+
+
+## python client
 
 Work in Progress Python client implementation for the most important public API endpoints for https://www.autoretouch.com.
 
 API documentation: https://docs.api.autoretouch.com
 
 
-## Installation 
+### Usage
 
-```shell script
-python3 -m venv venv 
-source venv/bin/activate
-pip install -r requirements.txt
-```
+This package exposes a single class `AutoretouchClient` allowing high- and low-level interactions with the autoRetouch API.
 
-## Authentication
+#### High-level
 
-### Prerequisites
+##### Batch 
 
-You need a free account at https://app.autoretouch.com.
+In most cases, you would like to process images according to some workflow within the scope of an organization.
+To do so, you can simply
 
-### Authenticate with Refresh Token
+```python3
+from autoretouch.api_client.client import AutoRetouchAPIClient
 
-Create a device connection in the autoretouch app at https://app.autoretouch.com/profile > API Information and copy the refresh token. 
-Store it securely, e.g. in an environment variable or your keychain.
-
-```python
-import os
-from autoretouch_api_client.authenticated_client import AutoretouchClientAuthenticated
-
-refresh_token = os.getenv('AUTORETOUCH_REFRESH_TOKEN')
-client = AutoretouchClientAuthenticated(refresh_token)
-```
-
-### Authenticate with Device Connection
-
-If you want to create the device connection within your application without using the autoretouch app:
-
-```python
-from autoretouch_api_client.authenticated_client import AutoretouchClientAuthenticated
-from autoretouch_api_client.device_authentication import authenticate_device_and_get_refresh_token
-
-refresh_token = authenticate_device_and_get_refresh_token()
-client = AutoretouchClientAuthenticated(refresh_token)
-```
-
-Or more convenient:
-
-```python
-from autoretouch_api_client.authenticated_client import authenticate_device_and_get_client
-
-client = authenticate_device_and_get_client()
-```
-
-### Credential Storage
-
-There is also a basic implementation of credential storage.
-The credentials are stored in a JSON file, this may or may not be sufficient for your security requirements.
-Use it with caution.
-
-```python
-from autoretouch_api_client.authenticated_client import AutoretouchClientAuthenticatedPersistent
-
-refresh_token = authenticate_device_and_get_refresh_token()
-client = AutoretouchClientAuthenticatedPersistent(
-        credentials_path="path/to/credentials/file.json", refresh_token=refresh_token)
-```
-
-Or more convenient:
-
-```python
-from autoretouch_api_client.authenticated_client import authenticate_device_and_get_client_with_persistence
-
-client = authenticate_device_and_get_client_with_persistence("path/to/credentials/file.json")
-```
-
-
-## Usage
-
-Usually, you are using the autoretouch API within the scope of an organization.
-To get the organization id you need to refer: https://app.autoretouch.com/organization > Copy Organization ID.
-
-To refer to a workflow, retrieve the workflow id at: https://app.autoretouch.com/workflows > ⋮ > Workflow API Information > id.
-
-Example to upload an image and process it through a workflow: 
-
-```python
-# ...
 organization_id = "e722e62e-5b2e-48e1-8638-25890e7279e3"
+
+ar_client = AutoRetouchAPIClient(
+    organization_id=organization_id,
+    # by default the client saves and reloads your credentials here:
+    credentials_path="~/.config/autoretouch-credentials.json"
+)
+
 workflow_id = "26740cd0-3a04-4329-8ba2-e0d6de5a4aaf"
+input_dir = "images_to_retouch/"
+output_dir = "retouched_images/"
 
-input_image_content_hash = client.upload_image( 
-        organization_id=organization_id,
-        filepath="input_image.jpg")
-
-workflow_execution_id = client.create_workflow_execution_for_image_reference(
-        workflow_id=workflow_id, 
-        organization_id=organization_id, 
-        image_content_hash=input_image_content_hash, 
-        image_name="input_image.jpg", 
-        mimetype="image/jpeg", 
-        labels={"myLabel": "myValue"})
-
-workflow_execution_status = client.get_workflow_execution_details(
-        organization_id=organization_id, 
-        workflow_execution_id=workflow_execution_id
-).status
-
-if workflow_execution_status == "COMPLETED":    
-    result_image_bytes = client.download_workflow_execution_result_blocking( 
-            organization_id=organization_id,
-            workflow_execution_id=workflow_execution_id)
-    
-    with open("result_image.jpg", "wb") as f:
-        f.write(result_image_bytes)
-
+# starts a thread for each image and download the results to output_dir
+ar_client.process_batch(workflow_id, input_dir, output_dir)
 ```
+---
+**Note**
+
+- Get your `organization_id` from https://app.autoretouch.com/organization > Copy Organization ID.
+- Get your `workflow_id` from https://app.autoretouch.com/workflows > `⋮` > Workflow API Information > id.
+---
+
+##### Single Image
+
+If you wish to process a single image with a workflow, you can do
+
+```python
+ar_client.process_image("my_image.png", workflow_id, output_dir)
+```
+
+This is the method called internally by `proces_batch`. It will 
+1. upload the image
+2. start an execution
+3. poll every 2 seconds for the status of the execution
+4. download the result to `output_dir` or return `False` if the execution failed 
+
+This is the recommended way to efficiently process images through our asynchronous api.  
+
+##### Authentication
+
+The `AutoRetouchAPIClient` authenticates itself with the [device flow](https://auth0.com/docs/get-started/authentication-and-authorization-flow/device-authorization-flow) of `auth0`.
+Upon instantiation of the client, you can configure
+- whether credentials should be persisted or not through `save_credentials=`
+- where credentials should be persisted/loaded from through `credentials_path=`
+
+If you don't pass a `credentials_path`, the client will first check if you passed a `refresh_token` with which it can obtain credentials.
+
+If this argument is also `None`, the client will trigger a device flow from the top.
+It will open a window in your browser asking you to confirm a device code.
+The client will be authenticated once you confirmed.
+
+By default, `credentials_path` and `refresh_token` are `None` but `save_credentials=True`.
+The first time you use the client, this triggers the device flow and saves the obtained credentials to `~/.config/autoretouch-credentials.json`.
+After that, it automatically falls back to this path and authenticates itself without you having to do anything :wink:
+
+
+#### Low-level Endpoints
+
+for finer interactions with the API, the client exposes methods corresponding to endpoints.
+
+TODO: table with `method name & signature | api docs link`
