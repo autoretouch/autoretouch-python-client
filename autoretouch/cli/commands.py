@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 import click
@@ -76,12 +77,20 @@ def config_get():
             click.echo(f"\t{k}: {v}")
 
 
-def autocomplete_user_organizations(ctx, param, incomplete):
-    return [str(k.id) for k in AutoRetouchAPIClient().get_organizations() if k.name.startswith(incomplete)]
+def autocomplete_user_organizations(ctx: click.core.Context, param: click.core.Argument, incomplete: str):
+    with contextlib.redirect_stderr(open(os.devnull, 'w')), contextlib.redirect_stdout(open(os.devnull, 'w')):
+        try:
+            return [str(k.id) for k in AutoRetouchAPIClient().get_organizations() if k.name.startswith(incomplete)]
+        except Exception as e:
+            return []
 
 
-def autocomplete_user_workflows(ctx, param, incomplete):
-    return [str(k.id) for k in AutoRetouchAPIClient().get_workflows() if k.name.startswith(incomplete)]
+def autocomplete_user_workflows(ctx: click.core.Context, param: click.core.Argument, incomplete: str):
+    with contextlib.redirect_stderr(open(os.devnull, 'w')), contextlib.redirect_stdout(open(os.devnull, 'w')):
+        try:
+            return [str(k.id) for k in AutoRetouchAPIClient().get_workflows() if k.name.startswith(incomplete)]
+        except Exception as e:
+            return []
 
 
 @click.command(name="set")

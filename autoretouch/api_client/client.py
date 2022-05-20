@@ -559,7 +559,7 @@ class AutoRetouchAPIClient:
                 " Either set the client instance attribute "
                 "or passed it as kwarg when calling a client's method."
             )
-        logger.info(f"using{' ' if value == passed_in_value else ' default'} organization id: {value}")
+        logger.info(f"using {'' if value == passed_in_value else 'default'} organization id: {value}")
         return value
 
     def _get_workflow_id(self, passed_in_value):
@@ -570,5 +570,5 @@ class AutoRetouchAPIClient:
                 " Either set the client instance attribute "
                 "or passed it as kwarg when calling a client's method."
             )
-        logger.info(f"using{' ' if value == passed_in_value else 'default '} workflow id: {value}")
+        logger.info(f"using {'' if value == passed_in_value else 'default'} workflow id: {value}")
         return value

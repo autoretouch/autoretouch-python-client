@@ -63,7 +63,7 @@ class Authenticator:
                 self.refresh_token
             )
         elif self.credentials_path is not None and os.path.isfile(self.credentials_path):
-            logger.info(f"found stored credentials at {self.credentials_path}")
+            logger.debug(f"found stored credentials at {self.credentials_path}")
             self.credentials = self._read_credentials_file()
             self._refresh_credentials_if_expired()
         else:
