@@ -5,34 +5,71 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 
+def add_autocompletion():
+    try:
+        config_root = os.path.join(os.path.expanduser("~"), ".config", "autoretouch")
+        os.makedirs(config_root, exist_ok=True)
+    except Exception as e:
+        print(f"failed to install autocompletion. Exception was: {str(e)}")
+
+    def add_bash():
+        run(f"cp autoretouch/.autoretouch-complete.sh {config_root}/".split())
+        bashrc_path = os.path.expanduser("~/.bashrc")
+        if os.path.isfile(bashrc_path):
+            print("adding to bashrc")
+            string_to_add = "\n\n# autoretouch auto-completion\n. ~/.config/autoretouch/.autoretouch-complete.sh\n\n"
+            with open(bashrc_path, "r") as f:
+                bashrc_has_been_added = string_to_add in f.read()
+            print(f"bashrc_has_been_added: {bashrc_has_been_added}")
+            if not bashrc_has_been_added:
+                os.system(f"echo \"{string_to_add}\" >> {bashrc_path}")
+
+    def add_fish():
+        run(f"cp autoretouch/.autoretouch-complete.fish {config_root}/".split())
+        fish_completions_path = os.path.expanduser("~/.config/fish/completions")
+        if os.path.isdir(fish_completions_path):
+            print("adding to fish/completions")
+            fish_completion_file_path = os.path.join(fish_completions_path, ".autoretouch-complete.fish")
+            if not os.path.isfile(fish_completion_file_path):
+                os.system(f"cp autoretouch/.autoretouch-complete.fish {fish_completion_file_path}")
+
+    def add_zsh():
+        run(f"cp autoretouch/.autoretouch-complete.zsh {config_root}/".split())
+        zshrc_path = os.path.expanduser("~/.zshrc")
+        if os.path.isfile(zshrc_path):
+            print("adding to zshrc")
+            string_to_add = "\n\n# autoretouch auto-completion\n. ~/.config/autoretouch/.autoretouch-complete.zsh\n\n"
+            with open(zshrc_path, "r") as f:
+                zshrc_has_been_added = string_to_add in f.read()
+            print(zshrc_has_been_added)
+            if not zshrc_has_been_added:
+                os.system(f"echo \"{string_to_add}\" >> {zshrc_path}")
+
+    try:
+        add_bash()
+        # add_fish()
+        add_zsh()
+    except Exception as e:
+        print(f"failed to install autocompletion. Exception was: {str(e)}")
+
+
 class PostInstallCommand(install):
     """Post-installation for installation mode."""
     # TODO
-    #  - autocomplete bash, fish, powershell
+    #  - autocomplete fish, powershell
     #  - windows support
     #  - no logs, no exception in autocomplete mode
     def run(self):
         install.run(self)
-        try:
-            config_root = os.path.join(os.path.expanduser("~"), ".config", "autoretouch")
-            os.makedirs(config_root, exist_ok=True)
-            run(f"cp autoretouch/.autoretouch-complete.zsh {config_root}/".split())
-            string_to_add = "\n\n# autoretouch auto-completion\n. ~/.config/autoretouch/.autoretouch-complete.zsh\n\n"
-            if os.path.isfile("~/.zshrc"):
-                with open("~/.zshrc", "r") as f:
-                    has_been_added = string_to_add in f.read()
-                if not has_been_added:
-                    os.system(f"echo \"{string_to_add}\" >> ~/.zshrc")
-        except Exception as e:
-            print(f"failed to install autocompletion. Exception was: {str(e)}")
+        add_autocompletion()
 
 
 with open("README.md", "r") as f:
     README = f.read()
 
 setup(
-    name='autoretouch',
-    version='0.0.1',
+    name="autoretouch",
+    version="0.0.1",
     author=[
         "Antoine Daurat <antoine@autoretouch.com>",
         "Oliver Allweyer <oliver@autoretouch.com>",
@@ -40,9 +77,9 @@ setup(
     ],
     description="cli and python package to communicate with the autoRetouch API",
     long_description=README,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     license="BSD Zero",
-    packages=find_packages(exclude=['test', 'assets', 'tmp']),
+    packages=find_packages(exclude=["test", "assets", "tmp"]),
     install_requires=[
         "requests",
         "click==8.1.3",
@@ -58,12 +95,12 @@ setup(
         "autoretouch": [".autoretouch-complete.zsh"]
     },
     entry_points={
-        'console_scripts': [
-            'autoretouch = autoretouch.cli.commands:autoretouch_cli',
+        "console_scripts": [
+            "autoretouch = autoretouch.cli.commands:autoretouch_cli",
         ],
     },
     cmdclass={
-        'install': PostInstallCommand,
+        "install": PostInstallCommand,
         "develop": PostInstallCommand
     },
 )

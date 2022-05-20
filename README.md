@@ -25,7 +25,7 @@ Process images straight from your terminal.
 
 ### Features 
 
-* ZSH auto-completion
+* auto-completion for bash, zsh
 
 ### Usage
 ```
