@@ -6,7 +6,7 @@ Prerequisites: Sign up for free at https://app.autoretouch.com.
 
 ### from pypi
 
-```python
+```shell
 pip install autoretouch
 ```
 
@@ -69,6 +69,7 @@ To do so, you can simply
 
 ```python3
 from autoretouch.api_client.client import AutoRetouchAPIClient
+from uuid import UUID
 
 organization_id = "e722e62e-5b2e-48e1-8638-25890e7279e3"
 
@@ -83,7 +84,7 @@ input_dir = "images_to_retouch/"
 output_dir = "retouched_images/"
 
 # starts a thread for each image and download the results to output_dir
-ar_client.process_batch(workflow_id, input_dir, output_dir)
+ar_client.process_folder(input_dir, output_dir, UUID(workflow_id))
 ```
 ---
 **Note**
@@ -97,7 +98,19 @@ ar_client.process_batch(workflow_id, input_dir, output_dir)
 If you wish to process a single image with a workflow, you can do
 
 ```python
-ar_client.process_image("my_image.png", workflow_id, output_dir)
+from autoretouch.api_client.client import AutoRetouchAPIClient
+from uuid import UUID
+
+organization_id = "e722e62e-5b2e-48e1-8638-25890e7279e3"
+
+ar_client = AutoRetouchAPIClient(
+    organization_id=organization_id,
+    # by default the client saves and reloads your credentials here:
+    credentials_path="~/.config/autoretouch-credentials.json"
+)
+workflow_id = "26740cd0-3a04-4329-8ba2-e0d6de5a4aaf"
+output_dir = "retouched_images/"
+ar_client.process_image("my_image.png", output_dir, UUID(workflow_id))
 ```
 
 This is the method called internally by `proces_batch`. It will 

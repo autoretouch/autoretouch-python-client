@@ -41,10 +41,13 @@ class APIClientIntegrationTest(TestCase):
         )
 
         workflow_execution_id = (
-            self.client.create_workflow_execution_for_image_reference(workflow.id, input_image_content_hash,
-                                                                      "input_image.jpeg", "image/jpeg",
-                                                                      {"myLabel": "myValue"}, workflow.version,
-                                                                      organization.id)
+            self.client.create_workflow_execution_for_image_reference(
+                workflow_id=workflow.id,
+                image_content_hash=input_image_content_hash,
+                image_name="input_image.jpeg",
+                labels={"myLabel": "myValue"},
+                workflow_version_id=workflow.version,
+                organization_id=organization.id)
         )
         self.assertIsNotNone(workflow_execution_id)
 
@@ -182,7 +185,7 @@ class APIClientIntegrationTest(TestCase):
     def __wait_for_execution_to_complete(
             self, organization: Organization, workflow_execution_id: UUID
     ):
-        timeout = 10
+        timeout = 30
         interval = 1
         seconds_waited = 0
         while seconds_waited < timeout:

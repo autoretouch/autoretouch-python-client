@@ -61,7 +61,7 @@ DEFAULT_WORKFLOW_ID = os.environ.get(
     "AUTORETOUCH_WORKFLOW_ID",
     USER_CONFIG["workflow"]["id"]
 )
-DEFAULT_USER_AGENT = "Autoretouch-Python-Api-Client-0.0.2"
+DEFAULT_USER_AGENT = "Autoretouch-Python-Api-Client-0.0.3"
 
 T = TypeVar("T", bound=Callable)
 
