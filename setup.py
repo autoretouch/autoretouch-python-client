@@ -67,7 +67,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="autoretouch",
-    version="0.0.3",
+    version="0.1.0",
     author=[
         "Antoine Daurat <antoine@autoretouch.com>",
         "Oliver Allweyer <oliver@autoretouch.com>",

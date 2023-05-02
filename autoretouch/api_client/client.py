@@ -61,7 +61,7 @@ DEFAULT_WORKFLOW_ID = os.environ.get(
     "AUTORETOUCH_WORKFLOW_ID",
     USER_CONFIG["workflow"]["id"]
 )
-DEFAULT_USER_AGENT = "Autoretouch-Python-Api-Client-0.0.3"
+DEFAULT_USER_AGENT = "Autoretouch-Python-Api-Client-0.1.0"
 
 T = TypeVar("T", bound=Callable)
 
@@ -306,6 +306,18 @@ class AutoRetouchAPIClient:
             logger.debug(f"{url} answered with status {response.status_code}")
         response.raise_for_status()
         return response.content.decode(response.encoding)
+
+    def upload_image_from_urls(
+            self,
+            public_accessible_urls: Dict[str, str],
+            organization_id: Optional[UUID] = None,
+    ) -> Dict[str, str]:
+        logger.info("uploading image from public urls...")
+        self.authenticated()
+        organization_id = self._get_organization_id(organization_id)
+        url = f"{self.api_config.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
+        response = requests.post(url=url, headers=self.base_headers, json={"urls": public_accessible_urls})
+        return response.json()["urls"]
 
     def create_workflow_execution_for_image_file(
             self,

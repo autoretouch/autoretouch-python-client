@@ -11,12 +11,12 @@ from autoretouch.api_client.model import Organization, Workflow, WorkflowExecuti
 from test.api_config_dev import CONFIG_DEV
 
 CREDENTIALS_PATH = "../tmp/credentials.json"
-USER_AGENT = "Python-Unit-Test-0.0.1"
+USER_AGENT = "Python-Unit-Test-0.1.0"
 
 
 class HealthApiIntegrationTest(TestCase):
     def setUp(self) -> None:
-        self.client = AutoRetouchAPIClient(api_config=CONFIG_DEV, user_agent="Python-Unit-Test-0.0.1")
+        self.client = AutoRetouchAPIClient(api_config=CONFIG_DEV, user_agent=USER_AGENT)
 
     def test_health(self):
         assert_that(self.client.get_api_status()).is_equal_to(200)
@@ -98,6 +98,16 @@ class APIClientIntegrationTest(TestCase):
         self.assertIsNotNone(input_image_content_hash)
         self.assertEqual(
             input_image_content_hash,
+            "8bcac2125bd98cd96ba75667b9a8832024970ac05bf4123f864bb63bcfefbcf7",
+        )
+
+    def test_upload_image_from_urls(self):
+        organization, _ = self.__get_organization_and_workflow()
+        given_urls = {"input_image.jpeg": "https://raw.githubusercontent.com/autoretouch/autoretouch-python-client/main/assets/input_image.jpeg"}
+        result_image_content_hashes = self.client.upload_image_from_urls(given_urls, organization.id)
+        self.assertIsNotNone(result_image_content_hashes)
+        self.assertEqual(
+            result_image_content_hashes.get("input_image.jpeg"),
             "8bcac2125bd98cd96ba75667b9a8832024970ac05bf4123f864bb63bcfefbcf7",
         )
 

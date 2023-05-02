@@ -7,7 +7,7 @@ import signal
 from autoretouch.api_client.client import AutoRetouchAPIClient
 from test.api_config_dev import CONFIG_DEV
 
-USER_AGENT = "Python-Unit-Test-0.0.1"
+USER_AGENT = "Python-Unit-Test-0.1.0"
 
 
 class TestAuthenticator(TestCase):
