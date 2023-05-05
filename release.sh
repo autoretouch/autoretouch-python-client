@@ -9,4 +9,4 @@ python setup.py sdist
 
 echo "Releasing: $(ls dist/)"
 
-twine upload dist/* -u
+twine upload dist/* -u $(cat secrets/pypi-user) -p $(cat secrets/pypi-password)
