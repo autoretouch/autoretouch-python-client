@@ -45,7 +45,8 @@ class APIClientIntegrationTest(TestCase):
                 image_name="input_image.jpeg",
                 labels={"myLabel": "myValue"},
                 workflow_version_id=workflow.version,
-                organization_id=organization.id)
+                organization_id=organization.id,
+                settings={"input": {"some": "settings"}})
         )
         self.assertIsNotNone(workflow_execution_id)
 
