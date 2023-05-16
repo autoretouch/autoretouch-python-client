@@ -360,6 +360,7 @@ class AutoRetouchAPIClient:
             labels: Optional[Dict[str, str]] = None,
             workflow_version_id: Optional[UUID] = None,
             organization_id: Optional[UUID] = None,
+            settings: Optional[dict] = None,
     ) -> UUID:
         logger.info("creating workflow execution for image reference...")
         self.authenticated()
@@ -380,6 +381,7 @@ class AutoRetouchAPIClient:
                 "contentType": mimetype,
             },
             **({"labels": labels} if labels else {}),
+            "settings": settings if settings else {}
         }
 
         response = requests.post(url=url, headers=headers, data=json.dumps(payload))
