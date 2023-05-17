@@ -4,9 +4,7 @@ from unittest import TestCase
 from uuid import UUID
 from assertpy import assert_that
 
-from autoretouch.api_client.client import (
-    AutoRetouchAPIClient,
-)
+from autoretouch.api_client.client import AutoRetouchAPIClient
 from autoretouch.api_client.model import Organization, Workflow, WorkflowExecution
 from test.api_config_dev import CONFIG_DEV
 
@@ -47,7 +45,8 @@ class APIClientIntegrationTest(TestCase):
                 image_name="input_image.jpeg",
                 labels={"myLabel": "myValue"},
                 workflow_version_id=workflow.version,
-                organization_id=organization.id)
+                organization_id=organization.id,
+                settings={"input": {"some": "settings"}})
         )
         self.assertIsNotNone(workflow_execution_id)
 
@@ -81,10 +80,11 @@ class APIClientIntegrationTest(TestCase):
         organization, _ = self.__get_organization_and_workflow()
         with open("../assets/input_image.jpeg", "rb") as file:
             file_content = file.read()
-        input_image_content_hash = self.client.upload_image_from_bytes(image_content=file_content,
-                                                                       image_name="input_image.jpeg",
-                                                                       mimetype="image/jpeg",
-                                                                       organization_id=organization.id)
+        input_image_content_hash = self.client.upload_image_from_bytes(
+            image_content=file_content,
+            image_name="input_image.jpeg",
+            mimetype="image/jpeg",
+            organization_id=organization.id)
         self.assertIsNotNone(input_image_content_hash)
         self.assertEqual(
             input_image_content_hash,
@@ -114,10 +114,12 @@ class APIClientIntegrationTest(TestCase):
     def test_start_workflow_execution_immediately_and_wait(self):
         organization, workflow = self.__get_organization_and_workflow()
 
-        workflow_execution_id = self.client.create_workflow_execution_for_image_file(workflow.id,
-                                                                                     "../assets/input_image.jpeg",
-                                                                                     {"myLabel": "myValue"},
-                                                                                     workflow.version, organization.id)
+        workflow_execution_id = self.client.create_workflow_execution_for_image_file(
+            workflow_id=workflow.id,
+            image_path="../assets/input_image.jpeg",
+            labels={"myLabel": "myValue"},
+            workflow_version_id=workflow.version,
+            organization_id=organization.id)
         self.assertIsNotNone(workflow_execution_id)
 
         input_image_content_hash = (
