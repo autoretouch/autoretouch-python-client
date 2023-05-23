@@ -317,6 +317,7 @@ class AutoRetouchAPIClient:
         organization_id = self._get_organization_id(organization_id)
         url = f"{self.api_config.BASE_API_URL_CURRENT}/upload?organization={organization_id}"
         response = requests.post(url=url, headers=self.base_headers, json={"urls": public_accessible_urls})
+        response.raise_for_status()
         return response.json()["urls"]
 
     def create_workflow_execution_for_image_file(
