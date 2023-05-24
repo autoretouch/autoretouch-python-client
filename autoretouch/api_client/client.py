@@ -362,6 +362,7 @@ class AutoRetouchAPIClient:
             workflow_version_id: Optional[UUID] = None,
             organization_id: Optional[UUID] = None,
             settings: Optional[dict] = None,
+            webhooks: Optional[List[str]] = None,
     ) -> UUID:
         logger.info("creating workflow execution for image reference...")
         self.authenticated()
@@ -384,6 +385,8 @@ class AutoRetouchAPIClient:
             **({"labels": labels} if labels else {}),
             "settings": settings if settings else {}
         }
+        if webhooks is not None:
+            payload["webhooks"] = webhooks
 
         response = requests.post(url=url, headers=headers, data=json.dumps(payload))
         logger.debug(f"{url} answered with status {response.status_code}")
